@@ -36,7 +36,7 @@ menu - simple menu class
     $menu->add('item3', $data);                 # Add item to menu
 
 
-    $menu->show({       # Show menu and return change result
+    my $data = $menu->show({       # Show menu and return change result
         sort => 1,      # Sort by name
     });
 
