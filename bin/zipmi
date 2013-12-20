@@ -1,0 +1,69 @@
+#!/usr/bin/env perl
+
+use strict;
+use warnings;
+use Data::Dumper;
+use Getopt::Long;
+use FindBin '$RealBin';
+use lib "$RealBin/../lib";
+use Net::Zabbix;
+use config;
+use host;
+use menu;
+
+our $config = config->new("$RealBin/../etc/config");
+
+Getopt::Long::Configure ("bundling");
+GetOptions(
+    "help|h|?" => sub { usage() },
+    "verbose|v+" => \$config->{verbose},
+    "debug" => \$config->{debug},
+    "enabled-only|e" => \$config->{'enabled-only'},
+    "disabled-only|d" => \$config->{'disabled-only'},
+    "regexp|r" => \$config->{'regexp'},
+);
+
+print Dumper($config) if $config->{debug};
+
+my ($query, $command) = @ARGV;
+usage() unless $query;
+
+my $host_obj = host->new($config);
+my $search = $host_obj->search($query, {searchByAny => 1});
+
+if ($command) {
+    if ($#$search == 0) {
+        ipmi(shift(@$search));
+    } elsif ($#$search > 0) {
+        my $menu = menu->new({auto_change => 1});
+        $menu->make('host', $search);
+        my $change = $menu->show();
+
+        ipmi($change);
+    }
+} else {
+    $host_obj->show_results($search, {
+        verbose => $config->{verbose},
+        interface => 'ipmi',
+    });
+}
+
+sub ipmi {
+    my ($host) = @_;
+    my $interfaces = $host_obj->get_interfaces($host);
+
+    my $_host = $interfaces->{ipmi}->{ip} ||= $interfaces->{ipmi}->{dns};
+    my $_user = $host->{ipmi_username};
+    my $_pass = $host->{ipmi_password};
+
+    my $exec = "ipmitool ";
+    $exec .= "-v " if $config->{verbose};
+    $exec .= "-I lanplus -H $_host -U $_user -P $_pass $command";
+
+    system($exec);
+}
+
+sub usage {
+    print "Help\n";
+    exit;
+}
