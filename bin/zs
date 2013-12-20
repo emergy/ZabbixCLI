@@ -1,0 +1,138 @@
+#!/usr/bin/env perl
+
+use strict;
+use warnings;
+use Data::Dumper;
+use File::Basename;
+use Getopt::Long;
+use FindBin '$RealBin';
+use lib "$RealBin/../lib";
+use config;
+use Net::Zabbix;
+use host;
+use menu;
+
+our $config = config->new("$RealBin/../etc/config", {
+    'reverse-s' => 'no',
+    'mount-options' => '',
+    'mount-dir' => '~/sshfs/$hostname',
+});
+
+Getopt::Long::Configure ("bundling");
+GetOptions(
+    "help|h|?" => sub { usage() },
+    "verbose|v+" => \$config->{verbose},
+    "debug" => \$config->{debug},
+    "search|s" => \$config->{ssh},
+    "ssh-user|u=s" =>\$config->{'ssh-user'},
+    "ssh-key|k=s" => \$config->{'ssh-key'},
+    "key-checking-no|n" => sub {
+        $config->{'ssh-options'} .= ' -oUserKnownHostsFile=/dev/null -oStrictHostKeyChecking=no ';
+    },
+    "disable-config-ssh-key|K" => sub { $config->{'ssh-key'} = '' },
+    "ssh-command|c=s" => \$config->{'ssh-command'},
+    "enabled-only|e" => \$config->{'enabled-only'},
+    "disabled-only|d" => \$config->{'disabled-only'},
+    "mount|m" => \$config->{'mount'},
+    "regexp|r" => \$config->{'regexp'},
+); 
+
+print Dumper($config) if $config->{'debug'};
+
+my $host_obj = host->new($config);
+
+foreach my $query (@ARGV) {
+    my $search = $host_obj->search($query, {searchByAny => 1});
+    
+    # SSH 
+    if ((! $config->{ssh}) or $config->{'ssh-command'}) {
+
+        # if ssh-command
+        #
+        if ($config->{'ssh-command'}) {
+            foreach my $host (@$search) {
+                print "Execute $host->{host} command: $config->{'ssh-command'}\n" if $config->{'debug'} or $config->{verbose};
+
+                my $interfaces = $host_obj->get_interfaces($host);
+                my $ip;
+
+                if (ref $interfaces->{agent} eq 'ARRAY') {
+                    my $iface_menu = menu->new();
+                    $iface_menu->make('ip', $interfaces->{agent});
+                    $ip = $iface_menu->show();
+                } else {
+                    $ip = $interfaces->{agent}->{ip} ||= $interfaces->{agent}->{dns};
+                }
+                
+                print "iface: $ip\n" if $config->{'debug'};
+                ssh($ip);
+            }
+
+        # unless ssh-command
+        #
+        } else {
+
+            # Create and show menu
+            my $menu = menu->new({auto_change => 1});
+            $menu->make('host', $search);
+            my $change = $menu->show();
+    
+            # Get network interfaces information
+            my $interfaces = $host_obj->get_interfaces($change);
+            my $ip;
+    
+            # Debug
+            print "ssh-command: $config->{'ssh-command'}\n" if $config->{'debug'};
+
+            # If exist agent interface connect this
+            if ($interfaces->{agent}) {
+
+                # Show interfaces menu, if agent interfaces not only one
+                if (ref $interfaces->{agent} eq 'ARRAY') {
+                    my $iface_menu = menu->new();
+                    $menu->make('ip', $interfaces->{agent});
+                    $ip = $menu->show()->{ip};
+                } else {
+                    $ip = $interfaces->{agent}->{ip} ||= $interfaces->{agent}->{dns};
+                }
+            } else {
+
+                # Use host name for connect
+                $ip = $change->{host};
+            }
+            
+            ssh($ip);
+        }
+
+    } else {
+        # Just show find result
+        $host_obj->show_results($search, $config->{verbose});
+    }
+}
+
+sub ssh {
+    my ($host) = @_;
+
+    my $user = '';
+    $user = $config->{'ssh-user'} . '@' if ($config->{'ssh-user'});
+
+    my $key = ''; # Use ssh-key if set on config or command line
+    $key = "-i $config->{'ssh-key'}" if ($config->{'ssh-key'});
+
+    # Use ssh options from config
+    my $options = $config->{'ssh-options'} ||= ' ';
+    my $cmd = "ssh $key $options $user$host";
+    
+    $cmd .= " '$config->{'ssh-command'}'" if ($config->{'ssh-command'});
+
+    # Debug
+    print $cmd . "\n" if ($config->{debug});
+
+    system($cmd);
+}
+
+
+sub usage {
+    print "Usage: \n";
+    exit;
+}
