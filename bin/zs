@@ -110,7 +110,9 @@ foreach my $query (@ARGV) {
 
     } else {
         # Just show find result
-        $host_obj->show_results($search, $config->{verbose});
+        $host_obj->show_results($search, {
+            verbose => $config->{verbose},
+        });
     }
 }
 

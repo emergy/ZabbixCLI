@@ -150,25 +150,26 @@ sub get_interfaces {
 }
 
 sub show_results {
-    my ($self, $search, $verbose) = @_;
+    my ($self, $search, $params) = @_;
+    $params->{interface} ||= 'agent';
 
     # Just show find result
     foreach my $host (@$search) {
         my $interfaces = get_interfaces($self, $host);
  
-        if ($verbose) {
+        if ($params->{verbose}) {
             show_verbose($host, $interfaces);
         } else {
-            if ($interfaces->{agent}) {
-                if (ref $interfaces->{agent} eq 'ARRAY') {
-                    foreach my $iface (@{$interfaces->{agent}}) {
+            if ($interfaces->{$params->{interface}}) {
+                if (ref $interfaces->{$params->{interface}} eq 'ARRAY') {
+                    foreach my $iface (@{$interfaces->{$params->{interface}}}) {
                         print "$iface->{ip}\t $host->{host}\n";
                     }
                 } else {
-                    print "$interfaces->{agent}->{ip}\t $host->{host}\n";
+                    print "$interfaces->{$params->{interface}}->{ip}\t $host->{host}\n";
                 }
             } else {
-                print STDERR "Host \"$host->{host}\" interfaces not exists\n";
+                print STDERR "Host \"$host->{host}\" $params->{interface} interfaces not exists\n";
             }
         }
     }
