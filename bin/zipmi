@@ -1,10 +1,75 @@
 #!/usr/bin/env perl
 
+#=encoding utf8;
+
+=head1 NAME
+
+IPMI Tool for ZabbixCLI
+
+=head1 USAGE
+
+       zipmi [-v] [-r] <query> <command>
+                -e          Enabled hosts only
+                -d          Disabled hosts only
+
+=head2 exemples:
+
+=over 1
+
+
+B<zipmi exemple.host.corp 'power <on|off|reset|soft>'>
+    Performs a chassis control command to view and change the power state.
+
+
+B<zipmi exemple.host.corp 'user list'>
+    Displays a list of user information for all defined userids.
+
+B<zipmi exemple.host.corp 'user set name <userid> <username>'>
+    Sets the username associated with the given userid.
+
+B<zipmi exemple.host.corp 'user set password <userid> [<password>]'>
+    Sets the password for the given userid. If no password is given, the password 
+    is cleared (set to the NULL password). Be careful when removing passwords 
+    from administrator-level accounts.
+
+B<zipmi exemple.host.corp 'user disable|enable <userid>'>
+    Disables|Enables access to the BMC by the given userid.
+
+B<zipmi exemple.host.corp 'session info all'>
+
+
+B<zipmi exemple.host.corp 'sdr'>
+B<zipmi exemple.host.corp 'sensor'>
+
+
+B<zipmi exemple.host.corp 'sel time get'>
+B<zipmi exemple.host.corp 'sel time set <time string>'>
+    Sets the SEL clock. Future SEL entries will use the time set by this command.
+    <time string> is of the form "MM/DD/YYYY HH:MM:SS". Note that hours are in 
+    24-hour form. It is recommended that the SEL be cleared before setting the time.
+
+B<zipmi exemple.host.corp 'sol activate'>
+
+Special escape sequences are provided to control the SOL session:
+        ~.     Terminate connection
+        ~^Z    Suspend ipmitool
+        ~B     Send break
+        ~~     Send the escape character by typing it twice
+        ~?     Print the supported escape sequences
+
+For enable sol on Linux host add "console=ttyS1,115200" to kernel params
+
+   More information about IPMItool see in documentation page:
+       http://ipmitool.sourceforge.net/manpage.html
+
+=cut
+
 use strict;
 use warnings;
 use Data::Dumper;
 use Getopt::Long;
 use FindBin '$RealBin';
+use Pod::Usage;
 use lib "$RealBin/../lib";
 use Net::Zabbix;
 use config;
@@ -64,6 +129,6 @@ sub ipmi {
 }
 
 sub usage {
-    print "Help\n";
+    print "Use \"perldoc $0\" for take help\n";
     exit;
 }
