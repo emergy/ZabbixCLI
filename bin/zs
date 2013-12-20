@@ -74,6 +74,7 @@ use warnings;
 use Data::Dumper;
 use File::Basename;
 use Getopt::Long;
+use Pod::Usage;
 use File::Path qw/ make_path /;
 use File::Temp qw/ tempfile tempdir /;
 use FindBin '$RealBin';
@@ -231,6 +232,6 @@ sub ssh {
 
 
 sub usage {
-    print "Usage: \n";
+    pod2usage(1);
     exit;
 }
