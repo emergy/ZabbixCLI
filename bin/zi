@@ -9,6 +9,8 @@ zi - IPMI Tool for ZabbixCLI
        zi [-v] [-r] <query> <command>
                 -e          Enabled hosts only
                 -d          Disabled hosts only
+                --help      Thise message
+                --help-all  Verbose help
 
 =head1 EXAMPLES
 
@@ -83,6 +85,7 @@ our $config = config->new("$RealBin/../etc/config");
 Getopt::Long::Configure ("bundling");
 GetOptions(
     "help|h|?" => sub { usage() },
+    "help-all" => sub { usage(2) },
     "verbose|v+" => \$config->{verbose},
     "debug" => \$config->{debug},
     "enabled-only|e" => \$config->{'enabled-only'},
@@ -131,6 +134,6 @@ sub ipmi {
 }
 
 sub usage {
-    pod2usage(1);
+    pod2usage({-verbose => $_[0]});
     exit;
 }

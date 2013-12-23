@@ -112,6 +112,8 @@ print Dumper($config) if $config->{'debug'};
 
 my $host_obj = host->new($config);
 
+usage() if $#ARGV < 0;
+
 foreach my $query (@ARGV) {
     my $search = $host_obj->search($query, {searchByAny => 1});
     
