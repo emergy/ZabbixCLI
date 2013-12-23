@@ -4,7 +4,7 @@
 
 IPMI Tool for ZabbixCLI
 
-=head1 USAGE
+=head1 SYNOPSIS
 
        zipmi [-v] [-r] <query> <command>
                 -e          Enabled hosts only
