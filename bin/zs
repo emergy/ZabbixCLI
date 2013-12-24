@@ -115,7 +115,8 @@ my $host_obj = host->new($config);
 usage() if $#ARGV < 0;
 
 foreach my $query (@ARGV) {
-    my $search = $host_obj->search($query, {searchByAny => 1});
+    my @search = @{$host_obj->search($query, {searchByAny => 1})};
+    next if $#search < 0;
     
     # SSH 
     if ((! $config->{ssh}) or $config->{'ssh-command'} or $config->{'mount'}) {
@@ -123,7 +124,7 @@ foreach my $query (@ARGV) {
         # if ssh-command
         #
         if ($config->{'ssh-command'}) {
-            foreach my $host (@$search) {
+            foreach my $host (@search) {
                 print "Execute $host->{host} command: $config->{'ssh-command'}\n" if $config->{'debug'} or $config->{verbose};
 
                 my $interfaces = $host_obj->get_interfaces($host);
@@ -144,10 +145,9 @@ foreach my $query (@ARGV) {
         # unless ssh-command
         #
         } else {
-
             # Create and show menu
             my $menu = menu->new({auto_change => 1});
-            $menu->make('host', $search);
+            $menu->make('host', \@search);
             my $change = $menu->show();
     
             # Get network interfaces information
@@ -181,7 +181,7 @@ foreach my $query (@ARGV) {
 
     } else {
         # Just show find result
-        $host_obj->show_results($search, {
+        $host_obj->show_results(\@search, {
             verbose => $config->{verbose},
         });
     }
