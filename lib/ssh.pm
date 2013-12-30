@@ -31,9 +31,11 @@ sub new {
 }
 
 sub ssh {
-    my ($self, $host, $name) = @_;
+    my ($self, $host, $name, $command) = @_;
     my $cmd;
     my $config = $self->{'config'};
+    $config->{'ssh-command'} = $command if $command;
+
 
     my $user = '';
     $user = $config->{'ssh-user'} . '@' if ($config->{'ssh-user'});
