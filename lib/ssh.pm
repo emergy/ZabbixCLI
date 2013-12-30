@@ -18,7 +18,7 @@ use File::Temp qw/ tempfile tempdir /;
     };
 
     my $ssh = ssh->new($config);
-    $ssh->ssh($host, $name);
+    $ssh->ssh($host, $name, $command);
 
 =cut
 
