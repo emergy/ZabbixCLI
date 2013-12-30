@@ -5,12 +5,26 @@ use warnings;
 use File::Path qw/ make_path /;
 use File::Temp qw/ tempfile tempdir /;
 
+=head1 NAME
+
+    SSH - SSH module for ZabbixCLI
+
+=head1 SYNOPSIS
+
+    my $config = {
+        mount-dir => $ENV{HOME} . '/.ssh/$hostname',
+        ssh-user  => 'root',
+        ssh-key   => $ENV{HOME} . '/.ssh/id_rsa',
+    };
+
+    my $ssh = ssh->new($config);
+    $ssh->ssh($host, $name);
+
+=cut
+
 sub new {
     my ($class, $config) = @_;
-
-    my $self;
-
-    $self->{'config'} = $config;
+    my $self->{'config'} = $config;
 
     bless $self, $class;
     return $self;
