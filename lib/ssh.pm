@@ -18,7 +18,7 @@ use File::Temp qw/ tempfile tempdir /;
     };
 
     my $ssh = ssh->new($config);
-    $ssh->ssh($host, $name, $command);
+    my $return = $ssh->ssh($host, $name, $command);
 
 =cut
 
@@ -73,9 +73,17 @@ sub ssh {
     }
     
     # Debug
-    print $cmd . "\n" if ($config->{debug});
+    print '$cmd: ' . $cmd . "\n" if ($config->{debug});
 
-    system($cmd);
+    if ($config->{'ssh-command'}) {
+        if ($config->{verbose}) {
+            return `$cmd`;
+        } else {
+            return `$cmd 2>/dev/null`;
+        }
+    } else {
+        system($cmd);
+    }
 }
 
 1;
