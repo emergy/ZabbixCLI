@@ -140,7 +140,9 @@ foreach my $query (@ARGV) {
                 }
                 
                 print "iface: $ip\n" if $config->{'debug'};
-                ssh($ip, $host->{host});
+                
+                my $ssh = ssh->new($config);
+                print $ssh->ssh($ip, $host->{host})
             }
 
         # unless ssh-command
@@ -153,6 +155,7 @@ foreach my $query (@ARGV) {
     
             # Get network interfaces information
             my $interfaces = $host_obj->get_interfaces($change);
+            print "\$interfaces: " . Dumper($interfaces) . "\n" if $config->{'debug'};
             my $ip;
     
             # Debug
@@ -164,8 +167,8 @@ foreach my $query (@ARGV) {
                 # Show interfaces menu, if agent interfaces not only one
                 if (ref $interfaces->{agent} eq 'ARRAY') {
                     my $iface_menu = menu->new();
-                    $menu->make('ip', $interfaces->{agent});
-                    $ip = $menu->show()->{ip};
+                    $iface_menu->make('ip', $interfaces->{agent});
+                    $ip = $iface_menu->show()->{ip};
                 } else {
                     $ip = $interfaces->{agent}->{ip} ||= $interfaces->{agent}->{dns};
                 }
