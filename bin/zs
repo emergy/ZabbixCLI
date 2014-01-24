@@ -141,8 +141,9 @@ foreach my $query (@ARGV) {
                 
                 print "iface: $ip\n" if $config->{'debug'};
                 
+                print "Connect to $host->{host}\n" if $config->{'verbose'};
                 my $ssh = ssh->new($config);
-                print $ssh->ssh($ip, $host->{host})
+                print $ssh->ssh($ip, $host->{host}) . "\n";
             }
 
         # unless ssh-command
