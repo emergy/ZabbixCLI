@@ -71,6 +71,9 @@ sub search {
     my $search_opts = {};
 
     unless ($config->{'regexp'}) {
+        # Aliases
+        $query = $config->{alias}->{$query} if $config->{alias}->{$query};
+
         $search_opts->{$_} = $query foreach (@{$config->{'fields'}});
     }
 
