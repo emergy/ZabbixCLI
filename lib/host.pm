@@ -70,6 +70,13 @@ sub search {
 
     my $search_opts = {};
 
+    if ($config->{replace_space}) {
+        if ($query =~ /\s/) {
+            $query =~ s/\s+/.*/g;
+            $config->{'regexp'} = 1;
+        }
+    }
+
     unless ($config->{'regexp'}) {
         # Aliases
         $query = $config->{alias}->{$query} if $config->{alias}->{$query};

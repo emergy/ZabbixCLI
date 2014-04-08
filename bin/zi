@@ -128,8 +128,9 @@ sub ipmi {
 
     my $exec = "ipmitool ";
     $exec .= "-v " if $config->{verbose};
-    $exec .= "-I lanplus -H $_host -U $_user -P $_pass $command";
+    $exec .= "-I lanplus -H $_host -U $_user -P $_pass '$command'";
 
+    print $exec . "\n";
     system($exec);
 }
 

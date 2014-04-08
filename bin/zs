@@ -98,6 +98,7 @@ GetOptions(
     "search|s" => \$config->{ssh},
     "ssh-user|u=s" =>\$config->{'ssh-user'},
     "ssh-key|k=s" => \$config->{'ssh-key'},
+    "ssh-options|o=s" => \$config->{'ssh-options'},
     "key-checking-no|n" => sub {
         $config->{'ssh-options'} .= ' -oUserKnownHostsFile=/dev/null -oStrictHostKeyChecking=no ';
     },
@@ -108,6 +109,8 @@ GetOptions(
     "mount|m" => \$config->{'mount'},
     "regexp|r" => \$config->{'regexp'},
 ); 
+
+
 
 print Dumper($config) if $config->{'debug'};
 
