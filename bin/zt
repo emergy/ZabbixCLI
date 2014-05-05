@@ -1,0 +1,204 @@
+#!/usr/bin/env perl
+
+=head1 NAME
+
+=over 
+
+=item zt - ZabbixCLI templates tool
+
+=back
+
+=head1 SYNOPSIS
+
+=over
+
+=item zs [OPTIONS] <query>
+
+=item zs -g <template name>
+
+=back
+
+=head1 OPTIONS
+
+=over
+
+=item help
+
+This message
+
+=item verbose
+
+Verbose mode
+
+=item clear-templates|C
+
+Clear all templates or unlink template set template-name option
+
+=item template-name|n <name>
+
+Set teamplate name for clear-templates option
+
+=item link-template|L <name>
+
+Link template to host
+
+=item change-status|S 
+
+Change monitoring status
+
+=item search-tamplates|s
+
+Search exist templates on zabbix server by name
+
+=item get-templates|g
+
+Show templates linked this host
+
+=item enabled-only
+
+Select enabled only hosts by Zabbix server query
+
+=item disabled-only
+
+Select disabled only hosts by Zabbix server query
+
+=item regexp|r
+
+Select hosts query as regexp
+
+=cut
+
+use strict;
+use warnings;
+use Data::Dumper;
+use FindBin '$RealBin';
+use lib "$RealBin/../lib";
+use Net::Zabbix;
+use Pod::Usage;
+use Data::Dumper;
+use Getopt::Long;
+use templates;
+use host;
+use config;
+
+our $config = config->new("$RealBin/../etc/config", {
+    'mount-options' => '',
+    'mount-dir' => '~/sshfs/$hostname',
+});
+
+my ($help,
+    $verbose,
+    $regexp,
+    $clear_templates,
+    $link_template,
+    $change_status,
+    $get_templates,
+    $template_name,
+    $clear_all_not_in_templates,
+    $search_tamplates,
+);
+
+Getopt::Long::Configure ("bundling");
+my $opts = GetOptions(
+    "help|h|?" => sub { usage() },
+    "verbose|v+" => \$config->{verbose},
+    "debug" => \$config->{debug},
+    "template-name|n=s" => \$template_name,
+    "clear-templates|C" => \$clear_templates,
+    "clear-all-not-in-templates|A" => \$clear_all_not_in_templates,
+    "link-template|L=s" => \$link_template,
+    "change-status|S=s" => \$change_status,
+    "search-tamplates|s=s" => \$search_tamplates,
+    "get-templates|g" => \$get_templates,
+    "ssh-user|u=s" =>\$config->{'ssh-user'},
+    "ssh-key|k=s" => \$config->{'ssh-key'},
+    "ssh-options|o=s" => \$config->{'ssh-options'},
+    "key-checking-no|n" => sub {
+        $config->{'ssh-options'} .= ' -oUserKnownHostsFile=/dev/null -oStrictHostKeyChecking=no ';
+    },
+    "disable-config-ssh-key|K" => sub { $config->{'ssh-key'} = '' },
+    "enabled-only|e" => \$config->{'enabled-only'},
+    "disabled-only|d" => \$config->{'disabled-only'},
+    "regexp|r" => \$config->{'regexp'},
+);
+
+
+my $host_obj = host->new($config);
+
+
+my $t = templates->new($config);
+my $search_res;
+
+if($search_tamplates) {
+    $search_res = $t->get_template_ids_by_name($search_tamplates, 1);
+    
+    foreach (@$search_res) {
+        my ($id, $name) = each %$_;
+        print "$id\t$name\n";
+    }
+
+    print "\n";
+    exit 0;
+}
+
+usage() if $#ARGV < 0;
+
+foreach my $query (@ARGV) {
+    push @$search_res, (@{$host_obj->search($query, {searchByAny => 1})});
+}
+
+if (! $get_templates and ! $clear_templates) {
+    $host_obj->show_results($search_res, {
+        verbose => $config->{verbose},
+    });
+}
+
+if ($get_templates) {
+    $t->show_templates($search_res);
+}
+
+
+if ($clear_templates) {
+    print "Clear templates\n";
+    $t->clear_templates($search_res, $template_name);
+}
+
+if ($clear_all_not_in_templates) {
+    print "Clear all not in templates\n";
+    $t->clear_all_not_in_templates($search_res);
+}
+
+if ($link_template) {
+    my $templates = $t->get_template_ids_by_name($link_template);
+
+    foreach (@$templates) {
+        my ($id, $name) = each %$_;
+
+        print "Link template \"$name\" to this hosts [y/n]: ";
+
+        chomp(my $qa = readline(*STDIN));
+        $t->link_template($search_res, $id) if ($qa eq 'y');
+    }
+}
+
+
+if ($change_status and length($change_status) > 0) {
+    my $status;
+
+    if ($change_status eq 'enable' or $change_status eq '0') {
+        $status = 1,
+    } elsif ($change_status eq 'disable' or $change_status eq '1') {
+        $status = 0,
+    } else {
+        usage();
+    }
+
+    $t->change_status($search_res, $status);
+}
+
+
+sub usage {
+    pod2usage(1);
+    exit 1;
+}
+
