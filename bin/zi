@@ -95,7 +95,9 @@ GetOptions(
 
 print Dumper($config) if $config->{debug};
 
-my ($query, $command) = @ARGV;
+my ($query) = shift(@ARGV);
+my $command = join(" ", @ARGV);
+
 usage() unless $query;
 
 my $host_obj = host->new($config);

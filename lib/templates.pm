@@ -225,6 +225,108 @@ sub show_templates {
     }
 }
 
+=item chk_template_is_exist($name)
+
+Check exist template
+
+=cut
+
+sub chk_template_is_exist {
+    my ($self, $name) = @_;
+    my $z = $self->{'zabbix'};
+
+    # Test for exist Template
+    my $template_exist = $z->get("template.exists", {
+        name => $name,
+    });
+
+    return $template_exist->{result};
+}
+
+=item create_template ($template_name, $group_id)
+
+Create template
+
+=cut
+
+sub create_template {
+    my ($self, $template_name, $group_id) = @_;
+    my $z = $self->{'zabbix'};
+
+    my $create_template = $z->create("template", {
+        'host' => $template_name,
+        'groups' => {
+            groupid => $group_id,
+        },
+    });
+
+    my $template_id = $create_template->{result}->{templateids}[0]
+        if $create_template->{result} and $create_template->{result}->{templateids};
+
+    die "Can't get Template ID\n" unless ($template_id);
+    return $template_id;
+}
+
+=item create_item ($template_id, $item_name, $key)
+
+Create item
+
+=cut
+
+sub create_item {
+    my ($self, $template_id, $item_name, $key) = @_;
+    my $z = $self->{'zabbix'};
+
+    my $item_id;
+    my $create_item = $z->create("item", {
+        'name'      => $item_name,
+        'hostid'    => $template_id,
+        'key_'      => $key,
+        'type'      => 0,
+        'data_type' => 0,
+        'value_type'=> 0,
+        #'units'     => "%",
+        'delay'     => 30,
+        #'applications' => [ $application_id ],
+    });
+
+
+    if (ref $create_item->{result}->{itemids} eq 'ARRAY') {
+        if ($#{$create_item->{result}->{itemids}} == 0) {
+            $item_id = $create_item->{result}->{itemids}[0];
+        } else {
+            die "Error: create_item results > 1\n";
+        }
+    } else {
+        die "Error: create_item result is not array\n";
+    }
+
+    return $item_id;
+}
+
+=item create_trigger($trigger_name, $template_id, $template_name, $key, $expression)
+
+ priority:
+           HIGH=4
+           AVERAGE=3
+           WARNING=2
+           INFORMATION=1
+
+=cut
+
+sub create_trigger {
+    my ($self, $trigger_name, $template_id, $template_name, $key, $expression, $priority) = @_;
+    my $z = $self->{'zabbix'};
+
+    $z->create("trigger", {
+        'description' => $trigger_name,
+        'hostid' => $template_id,
+        'expression' => $expression,
+        'priority' => $priority,
+        'status' => 0,
+    });
+}
+
 =item clear_all_not_in_templates
 
 Clean all items, templates, application, graf if this not linked to any template
