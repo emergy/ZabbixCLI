@@ -177,7 +177,10 @@ if ($link_template) {
         print "Link template \"$name\" to this hosts [y/n]: ";
 
         chomp(my $qa = readline(*STDIN));
-        $t->link_template($search_res, $id) if ($qa eq 'y');
+        
+        if ($qa eq 'y') {
+            $t->link_template($_->{hostid}, $id) foreach (@$search_res);
+        }
     }
 }
 

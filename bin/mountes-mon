@@ -51,8 +51,14 @@ foreach my $query (@ARGV) {
     if ($config->{do}) {
         my $mountes = get_mounts_from_fstab(@search);
 
-        while (my ($host, $mountes_list) = each %$mountes) {
-            create_and_link_zabbix_templates($host, $mountes_list);
+        while (my ($hostname, $mountes_list) = each %$mountes) {
+            my $host_id;
+
+            foreach (@search) {
+                $host_id = $_->{hostid} if $_->{host} eq $hostname;
+            }
+
+            create_and_link_zabbix_templates($host_id, $hostname, $mountes_list);
         }
     } else {
         if ($config->{'show'}) {
@@ -99,7 +105,7 @@ sub get_mounts_from_fstab {
 }
 
 sub create_and_link_zabbix_templates {
-    my ($hostname, $mountes_list) = @_;
+    my ($host_id, $hostname, $mountes_list) = @_;
 
     my $t = templates->new($config);
 
@@ -110,16 +116,21 @@ sub create_and_link_zabbix_templates {
         my $template_name = "Template mount-mon $mount_ip $vol";
 
         if ($t->chk_template_is_exist($template_name)) {
-            print "Link template \"$template_name\" to $hostname\n";
-            #$t->link_template([{ hostid => $host->{hostid} }], $template_id);
+            my $templates_list = $t->get_template_ids_by_name($template_name);
+            foreach (@$templates_list) {
+                my ($id, $name) = each %$_;
+                print "Link template \"$name\" to $hostname\n";
+                $t->link_template($host_id, $id);
+            }
         } else {
             print "Create template \"$template_name\"\n";
-            my $template_id = $t->create_template($template_name);
+            my $template_id = $t->create_template($template_name, 1);
             my $key = "system.run[\"mount|grep '$mount' >/dev/null && ( echo 1 ) || ( echo 0 )\"]";
-            my $item_id = $t->create_item($template_id, "NFS is mounted", $key);
+            my $item_id = $t->create_item($template_id, "$vol is mounted", $key);
             my $expression = "{$template_name:$key.abschange()}#0";
-            $t->create_trigger("NFS is mounted", $template_id, $template_name, $key, $expression, 1);
+            $t->create_trigger("$vol is mounted", $template_id, $template_name, $key, $expression, 1);
+            print "Link template to host $hostname\n";
+            $t->link_template($host_id, $template_id);
         }
-        exit;
     }
 }

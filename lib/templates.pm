@@ -107,9 +107,12 @@ sub clear_templates {
     }
 }
 
-=item get_template_ids_by_name
+=item get_template_ids_by_name($template_name, $search)
 
 Get list template id's by name
+    $search - bollean
+    1) search
+    2) filter
 
 =cut
 
@@ -147,28 +150,26 @@ sub get_template_ids_by_name {
     return \@list;
 }
 
-=item link_template($search, $template_id)
+=item link_template($host_id, $template_id)
 
 Link template to host(s)
 
 =cut
 
 sub link_template {
-    my ($self, $search, $template_id) = @_;
+    my ($self, $host_id, $template_id) = @_;
     my $z = $self->{'zabbix'};
 
-    foreach my $host (@$search) {
-        my $link_to_template = $z->raw_request("template", "massadd", {
-            'templates' => [{ templateid => $template_id }],
-            'hosts' => [{ hostid => $host->{hostid} }],
-        });
+    my $link_to_template = $z->raw_request("template", "massadd", {
+        'templates' => [{ templateid => $template_id }],
+        'hosts' => [$host_id],
+    });
 
-        if ($link_to_template->{error}) {
-            print $link_to_template->{error}->{message} . "\n";
-            print "\t" . $link_to_template->{error}->{data} . "\n";
-        } else {
-            print "OK\n";
-        }
+    if ($link_to_template->{error}) {
+        print $link_to_template->{error}->{message} . "\n";
+        print "\t" . $link_to_template->{error}->{data} . "\n";
+    } else {
+        print "OK\n";
     }
 }
 
