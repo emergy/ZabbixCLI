@@ -127,8 +127,8 @@ sub create_and_link_zabbix_templates {
             my $template_id = $t->create_template($template_name, 1);
             my $key = "system.run[\"mount|grep '$mount' >/dev/null && ( echo 1 ) || ( echo 0 )\"]";
             my $item_id = $t->create_item($template_id, "$vol is mounted", $key);
-            my $expression = "{$template_name:$key.abschange()}#0";
-            $t->create_trigger("$vol is mounted", $template_id, $template_name, $key, $expression, 1);
+            my $expression = "{$template_name:$key.last()}=0";
+            $t->create_trigger("$vol not mounted", $template_id, $template_name, $key, $expression, 4);
             print "Link template to host $hostname\n";
             $t->link_template($host_id, $template_id);
         }
