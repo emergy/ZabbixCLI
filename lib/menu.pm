@@ -33,7 +33,7 @@ menu - simple menu class
 
     my $menu->new({         # Make object
         auto_change => 1,   # Auto change menu item if this only one
-        cache_dir => 1,     # Directory for database saved autochange
+        cache_file => "/var",     # Directory for database saved autochange
                             # Default: "$RealBin/../var/menu_cache.db"
     });
 
@@ -52,8 +52,8 @@ menu - simple menu class
 sub new {
     my ($class, $params) = @_;
 
-    unless ($params->{cache_dir}) {
-        $params->{cache_dir} = "$RealBin/../var/menu_cache.db";
+    unless ($params->{cache_file}) {
+        $params->{cache_file} = "$RealBin/../var/menu_cache.db";
     }
 
     my $self = {
@@ -145,16 +145,21 @@ sub show {
 
 sub save_change {
     my ($self, $menu, $change) = @_;
-    my $cache_dir = $self->{params}->{cache_dir};
+    my $cache_file = $self->{params}->{cache_file};
+    my $cache_dir = $cache_file;
+    $cache_dir =~ s{/[^/]+$}{};
     my $create_table = 0;
-    unless (-e $cache_dir) {
+
+    mkdir $cache_dir if (! -e $cache_dir);
+
+    unless (-e $cache_file) {
         $create_table = 1;
-        open F, ">", $cache_dir or die "Can't open cache file: $!\n";
+        open F, ">", $cache_file or die "Can't open cache file: $!\n";
         close F;
     }
 
     require DBI;
-    my $db = DBI->connect("dbi:SQLite:$cache_dir","","", {RaiseError => 1, AutoCommit => 1});
+    my $db = DBI->connect("dbi:SQLite:$cache_file","","", {RaiseError => 1, AutoCommit => 1});
 
     if ($create_table) {
         $db->do("CREATE TABLE menu_cache (id INTEGER PRIMARY KEY, menu TEXT, change INTEGER)");
@@ -170,13 +175,13 @@ sub save_change {
 
 sub get_change {
     my ($self, $menu) = @_;
-    my $cache_dir = $self->{params}->{cache_dir};
+    my $cache_file = $self->{params}->{cache_file};
     my $r;
 
-    return 0 unless (-e $cache_dir);
+    return 0 unless (-e $cache_file);
 
     require DBI;
-    my $db = DBI->connect("dbi:SQLite:$cache_dir","","", {RaiseError => 1, AutoCommit => 1});
+    my $db = DBI->connect("dbi:SQLite:$cache_file","","", {RaiseError => 1, AutoCommit => 1});
     my $sth = $db->prepare("SELECT change FROM menu_cache WHERE menu = ?");
     $Data::Dumper::Terse = 1;
     $sth->execute(Dumper($menu));
