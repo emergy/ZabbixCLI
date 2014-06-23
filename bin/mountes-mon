@@ -1,5 +1,75 @@
 #!/usr/bin/env perl
 
+=head1 NAME
+
+Moutes mon
+
+=head1 DESCRIPTION
+
+Create NFS mount monitoring templates
+
+=head1 USAGE
+
+mountes-mon [-r] [-e] [-d] [-v] [-u user] [-k ssh-key] [-K] server --do
+
+=head2 Options
+
+=over
+
+=item help (h)
+
+This message
+
+=item verbose (v)
+
+Verbose mode
+
+=item ssh-user (u)
+
+SSH user
+
+=item ssh-key (k)
+
+SSH key
+
+=item ssh-options (o)
+
+SSH options
+
+=item key-checking-no (n)
+
+No cheack SSH known_hosts
+
+=item disable-config-ssh-key (K)
+
+Disable SSH key set in config
+
+=item enabled-only (e)
+
+Enabled only hosts in zabbix
+
+=item disabled-only (d) 
+
+Enabled only hosts in zabbix
+
+=item regexp (r)
+
+Use regex in query
+
+=item --do
+
+Do! No check mode
+
+=item show (s)
+
+Show templates
+
+=back
+
+=cut
+
+
+
 use strict;
 use warnings;
 use Data::Dumper;
@@ -133,4 +203,9 @@ sub create_and_link_zabbix_templates {
             $t->link_template($host_id, $template_id);
         }
     }
+}
+
+sub usage {
+    pod2usage(1);
+    exit;
 }
