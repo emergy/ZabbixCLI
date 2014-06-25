@@ -117,6 +117,8 @@ sub search {
                                         $safe = 1 if $host->{$field} !~ /$bl_item/;
                                     }
                                 }
+                                
+                                $safe = 1 if $#black_list < 0;
                             }
                         }
                     }
