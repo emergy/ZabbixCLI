@@ -58,9 +58,10 @@ sub new {
 }
  
 sub search {
-    my ($self, $query, $params) = @_;
+    my ($self, $raw_query, $params) = @_;
     my $config = $self->{'config'};
     my $zabbix = $self->{'zabbix'};
+    my @r;
 
     foreach my $key (keys %$params) {
         $config->{$key} = $params->{$key};
@@ -70,61 +71,75 @@ sub search {
 
     my $search_opts = {};
 
-    if ($config->{replace_space}) {
-        if ($query =~ /\s/) {
-            $query =~ s/\s+/.*/g;
-            $config->{'regexp'} = 1;
+    my @query_list = grep { !/^!/ } split(/:/, $raw_query);
+    my @black_list = grep { /^!/ } split(/:/, $raw_query);
+
+
+    foreach my $query (@query_list) {
+        if ($config->{'replace-space'}) {
+            if ($query =~ /\s/) {
+                $query =~ s/\s+/.*/g;
+                $config->{'regexp'} = 1;
+            }
         }
-    }
+    
+        unless ($config->{'regexp'}) {
+            # Aliases
+            $query = $config->{alias}->{$query} if $config->{alias}->{$query};
+    
+            $search_opts->{$_} = $query foreach (@{$config->{'fields'}});
+        }
+    
+        $config->{'sortfield'} ||= "host";
+    
+    
+        my $res = $zabbix->get("host", {
+            search      => $search_opts,
+            searchByAny => $config->{'searchByAny'},
+            sortfield   => $config->{'sortfield'},
+        });
+    
+    
+    
+        if (ref $res->{result} eq 'ARRAY') {
+            foreach my $host (@{$res->{result}}) {
+                if ($config->{'regexp'}) {
+                    my $safe = 0;
+    
+                    foreach my $field (@{$config->{'fields'}}) {
+                        if ($host->{$field}) {
 
-    unless ($config->{'regexp'}) {
-        # Aliases
-        $query = $config->{alias}->{$query} if $config->{alias}->{$query};
+                            if ($host->{$field} =~ /$query/) {
+                                foreach my $bl_item (@black_list) {
+                                    $bl_item =~ s/^!//;
 
-        $search_opts->{$_} = $query foreach (@{$config->{'fields'}});
-    }
-
-    $config->{'sortfield'} ||= "host";
-
-
-    my $res = $zabbix->get("host", {
-        search      => $search_opts,
-        searchByAny => $config->{'searchByAny'},
-        sortfield   => $config->{'sortfield'},
-    });
-
-
-    my @r;
-
-    if (ref $res->{result} eq 'ARRAY') {
-        foreach my $host (@{$res->{result}}) {
-            if ($config->{'regexp'}) {
-                my $safe = 0;
-
-                foreach (@{$config->{'fields'}}) {
-                    if ($host->{$_}) {
-                        $safe = 1 if $host->{$_} =~ /$query/;
+                                    if ($bl_item) {
+                                        $safe = 1 if $host->{$field} !~ /$bl_item/;
+                                    }
+                                }
+                            }
+                        }
                     }
+        
+                    next unless $safe;
                 }
     
-                next unless $safe;
+                # Enabled only arg
+                if ($config->{'enabled-only'}) {
+                    next if $host->{'status'} == 1;
+                }
+         
+                # Disabled only arg
+                if ($config->{'disabled-only'}) {
+                    next if $host->{'status'} == 0;
+                }
+    
+                print Dumper($host) if $config->{debug};
+                push @r, $host;
             }
-
-            # Enabled only arg
-            if ($config->{'enabled-only'}) {
-                next if $host->{'status'} == 1;
-            }
-     
-            # Disabled only arg
-            if ($config->{'disabled-only'}) {
-                next if $host->{'status'} == 0;
-            }
-
-            push @r, $host;
+    
         }
-
     }
-
 
     return \@r;
 }
@@ -163,6 +178,9 @@ sub show_results {
     my ($self, $search, $params) = @_;
     $params->{interface} ||= 'agent';
 
+    my @show_list;
+    my $max_length = 0;
+
     # Just show find result
     foreach my $host (@$search) {
         my $interfaces = get_interfaces($self, $host);
@@ -171,18 +189,28 @@ sub show_results {
             show_verbose($host, $interfaces);
         } else {
             if ($interfaces->{$params->{interface}}) {
+                my $iflist;
+
                 if (ref $interfaces->{$params->{interface}} eq 'ARRAY') {
-                    foreach my $iface (@{$interfaces->{$params->{interface}}}) {
-                        print "$iface->{ip}\t $host->{host}\n";
-                    }
+                    $iflist = join(", ", map {$_ = $_->{ip}} @{$interfaces->{$params->{interface}}}),
                 } else {
-                    print "$interfaces->{$params->{interface}}->{ip}\t $host->{host}\n";
+                    $iflist = $iflist = $interfaces->{$params->{interface}}->{ip};
                 }
+
+                push @show_list, {
+                    iflist => $iflist,
+                    hostname => $host->{host},
+                };
+
+                $max_length = length($iflist) if ($max_length < length($iflist));
+
             } else {
                 print STDERR "Host \"$host->{host}\" $params->{interface} interfaces not exists\n";
             }
         }
     }
+
+    printf "%-$max_length" . "s\t%s\n", $_->{iflist}, $_->{hostname} foreach @show_list;
 }
 
 sub show_verbose {

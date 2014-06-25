@@ -11,5 +11,8 @@ zabbix-url = http://zabbix.host.corp/
 mount-dir = ~/sshfs/$hostname
 mount-options = allow_other
 
+# Replace query space to .* and on regexp (-r)
+replace-space = yes
+
 alias test1 = test-1.host.corp
 alias test2 = test-2.host.corp
