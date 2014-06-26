@@ -2,6 +2,7 @@ package host;
 
 use strict;
 use warnings;
+use Net::Zabbix;
 use Data::Dumper;
 
 =encoding utf8
@@ -56,7 +57,29 @@ sub new {
     bless $self, $class;
     return $self;
 }
- 
+
+sub get_groups {
+    my ($self) = @_;
+    my $config = $self->{'config'};
+    my $zabbix = $self->{'zabbix'};
+
+    return $zabbix->get("hostgroup", {
+        output => "extend"
+    });
+}
+
+sub get_hosts_by_group {
+    my ($self, $group_id) = @_;
+    my $config = $self->{'config'};
+    my $zabbix = $self->{'zabbix'};
+
+    return $zabbix->get("host", {
+        #"output" => ["host"],
+        #"selectGroups" => "extend",
+        groupids => $group_id,
+    });
+}
+
 sub search {
     my ($self, $raw_query, $params) = @_;
     my $config = $self->{'config'};

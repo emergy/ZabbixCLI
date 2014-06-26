@@ -1,0 +1,57 @@
+#!/usr/bin/env perl
+
+use strict;
+use warnings;
+use Data::Dumper;
+use FindBin '$RealBin';
+use lib "$RealBin/../lib";
+use host;
+use config;
+use JSON;
+
+our $config = config->new("$RealBin/../etc/config");
+
+my $host_obj = host->new($config);
+
+# my $group_list = $host_obj->get_groups();
+# 
+# my $h = {};
+# 
+# if ($group_list->{result}) {
+#     foreach my $group (@{$group_list->{result}}) {
+#         my $host_list = $host_obj->get_hosts_by_group($group->{groupid});
+# 
+#         print $group->{name} . "\n";
+# 
+#         $h->{$group->{name}} = {
+#             hosts => [ map { $_ = $_->{host} } @{$host_list->{result}} ],
+#             vars => {
+#                 ansible_python_interpreter => "python2",
+#             }
+#         };
+#     }
+# 
+#     print to_json($h, {
+#         indent => 1,
+#         space_after => 1,
+#     });
+# }
+
+my $host_list = $host_obj->get_hosts_by_group();
+
+if ($host_list->{result}) {
+#    print Dumper($host_list->{result});exit
+    print to_json({
+        all => {
+            hosts => [ map { $_ = $_->{host} } @{$host_list->{result}} ],
+            vars => {
+                ansible_python_interpreter => "python2",
+                ansible_ssh_private_key_file => "~/.ssh/b",
+                ansible_ssh_user => "root",
+            },
+        }
+    },{
+        indent => 1,
+        space_after => 1,
+    });
+}
