@@ -1,5 +1,22 @@
 #!/usr/bin/env perl
 
+=head1 NAME
+
+ansible_hosts
+
+=head1 DESCRIPTION
+
+Return JSON all zabbix host for ansible dynamic inventory
+
+=head1 Usage
+
+ansible_hosts
+
+add script path to hostfile param in defaults 
+section in ansinle config: ansible.cfg
+
+=cut
+
 use strict;
 use warnings;
 use Data::Dumper;
@@ -46,8 +63,8 @@ if ($host_list->{result}) {
             hosts => [ map { $_ = $_->{host} } @{$host_list->{result}} ],
             vars => {
                 ansible_python_interpreter => "python2",
-                ansible_ssh_private_key_file => "~/.ssh/b",
-                ansible_ssh_user => "root",
+                ansible_ssh_private_key_file => $config->{'ssh-key'},
+                ansible_ssh_user => "root" => $config->{'ssh-user'},
             },
         }
     },{

@@ -23,6 +23,10 @@ host
 
     $host_obj->show_results($results, $verbose);
 
+    my $hosts = $host_obj->get_hosts_by_group($group_id);
+
+    my $groups = $host_obj->get_groups();
+
 =head2 params search
 
 =over 4
