@@ -34,23 +34,35 @@ config - simple config class
 =cut
 
 sub new {
-    my ($class, $config_file, $self) = @_;
+    my ($class, $config_file, $self, $raw_mode) = @_;
 
-    if (open my $cfg, "<", $config_file) {
-        while (<$cfg>) {
-            s/^\s*(.*)\s*$/$1/;
-            next if /^\s*#/;
+    my $parse_line = sub {
+        $_ = shift(@_);
 
-            if (/^([^\s=]+?)\s+([^\s=]+?)\s*=\s*(.+)$/) {
-                $self->{$1}->{$2} = $3;
-            } elsif (/^(.+?)\s*=\s*(.+)$/) {
-                $self->{$1} = $2;
-            }
+        s/^\s*(.*)\s*$/$1/;
+        return if /^\s*#/;
+
+        if (/^([^\s=]+?)\s+([^\s=]+?)\s*=\s*(.+)$/) {
+            $self->{$1}->{$2} = $3;
+        } elsif (/^(.+?)\s*=\s*(.+)$/) {
+            $self->{$1} = $2;
         }
+    };
 
-        close $cfg;
+    if ($raw_mode) {
+        foreach (split(/\n/, $config_file)) {
+            &$parse_line($_);
+        }
     } else {
-        $self = _error($self, "Can't open config file", $!);
+        if (open my $cfg, "<", $config_file) {
+            while (<$cfg>) {
+                &$parse_line($_);
+            }
+    
+            close $cfg;
+        } else {
+            $self = _error($self, "Can't open config file", $!);
+        }
     }
 
     bless $self, $class;

@@ -4,6 +4,8 @@ use strict;
 use warnings;
 use File::Path qw/ make_path /;
 use File::Temp qw/ tempfile tempdir /;
+use Data::Dumper;
+use config;
 
 =head1 NAME
 
@@ -36,6 +38,13 @@ sub ssh {
     my $config = $self->{'config'};
     $config->{'ssh-command'} = $command if $command;
 
+    if ($config->{'hostopt'}) {
+        if ($config->{'hostopt'}->{$name}) {
+            print "eorjireuwhihfreiwuhfiehrwif\n";
+            $config = config->new($config->{'hostopt'}->{$name}, $config, 1);
+            print Dumper($config);
+        }
+    }
 
     my $user = '';
     $user = $config->{'ssh-user'} . '@' if ($config->{'ssh-user'});
@@ -68,8 +77,10 @@ sub ssh {
     
         # Use ssh options from config
         my $options = $config->{'ssh-options'} ||= ' ';
+        $options .= ' -t ' if ($config->{'ssh-exec'});
         $cmd = "ssh $key $options $user$host";
         $cmd .= " '$config->{'ssh-command'}'" if ($config->{'ssh-command'});
+        $cmd .= " '$config->{'ssh-exec'}'" if ($config->{'ssh-exec'});
     }
     
     # Debug
