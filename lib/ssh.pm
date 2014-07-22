@@ -40,9 +40,7 @@ sub ssh {
 
     if ($config->{'hostopt'}) {
         if ($config->{'hostopt'}->{$name}) {
-            print "eorjireuwhihfreiwuhfiehrwif\n";
             $config = config->new($config->{'hostopt'}->{$name}, $config, 1);
-            print Dumper($config);
         }
     }
 

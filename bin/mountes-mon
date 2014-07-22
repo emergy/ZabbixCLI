@@ -156,7 +156,8 @@ sub get_mounts_from_fstab {
         if (ref $interfaces->{agent} eq 'ARRAY') {
             my $iface_menu = menu->new();
             $iface_menu->make('ip', $interfaces->{agent});
-            $ip = $iface_menu->show();
+            $ip = $iface_menu->show()->{ip} ||= $iface_menu->show()->{dns};
+            print "\$ip: $ip\n" if $config->{'verbose'};
         } else {
             $ip = $interfaces->{agent}->{ip} ||= $interfaces->{agent}->{dns};
         }
