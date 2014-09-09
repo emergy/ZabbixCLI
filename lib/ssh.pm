@@ -91,6 +91,7 @@ sub ssh {
             return `$cmd 2>/dev/null`;
         }
     } else {
+        print "\c[];$name\a";
         system($cmd);
     }
 }
