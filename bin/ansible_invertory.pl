@@ -24,9 +24,9 @@ usage();
 
 sub list {
     my $z = Net::Zabbix->new(
-        $config->{'server'},
-        $config->{'username'},
-        $config->{'password'},
+        $config->{'zabbix-url'},
+        $config->{'zabbix-username'},
+        $config->{'zabbix-password'},
     );
     
     my $hosts_query = $z->get('host', {
@@ -40,18 +40,13 @@ sub list {
         foreach my $group (@{$host->{groups}}) {
             push @{$heap->{'group_all'}->{hosts}}, $host->{name};
             push @{$heap->{$group->{name}}->{hosts}}, $host->{name};
-            $heap->{'_meta'}->{hostvars}->{ $host->{name} } = {
-                ansible_connection => 'ssh',
-                ansible_ssh_user => 'root',
-                ansible_ssh_private_key_file => '~/.ssh/b',
-                ansible_python_interpreter => 'python',
-            };
+
+            foreach (keys %$config) {
+                next unless /^ansible_/;
+                $heap->{'_meta'}->{hostvars}->{$host->{name}}->{$_} = $config->{$_};
+            }
         }
     }
-
-#     push @{$heap->{'_meta'}} = {
-#         hostvars => {},
-#     };
 
     print to_json($heap, {pretty => 1});
 }
