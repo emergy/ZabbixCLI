@@ -87,6 +87,106 @@ sub add {
 sub show {
     my ($self, $params) = @_;
 
+#     if ($params->{cli}) {
+        show_cli($self, $params);
+#     } else {
+#         show_curses($self, $params);
+#     }
+}
+
+sub show_curses {
+    my ($self, $params) = @_;
+
+    my @keys;
+    my $menu = $self->{menu};
+
+    my $change = 0;
+    $change = get_change($self, $menu);# if ($self->{params}->{enable_menu_save});
+
+    if ($params->{sort}) {
+        @keys = sort {$a cmp $b} @{$self->{keys}};
+    } else {
+        @keys = @{$self->{keys}};
+    }
+
+
+
+
+#     print Dumper(@keys);exit;
+    
+    require Curses::UI;
+
+    my $cui = Curses::UI->new(
+        -mouse_support => 1,
+        -color_support => 0,
+        -clear_on_exit => 1,
+        #-debug => 1,
+    );
+
+    my $win = $cui->add('win', 'Window');
+    $cui->set_binding( sub { exit(0); } , "\cC");
+
+    my ($buttons, $ret);
+
+    my $callback = sub {
+        my $value = $buttons->get();
+        #$cui->leave_curses;
+        $ret = $value;
+        $cui->mainloopExit;
+    };
+
+    map {
+        $_ = {
+            -label => $_,
+            -value => $menu->{$_},
+            -onpress => \&$callback,
+#             -onpress => sub {
+#                 $cui->leave_curses;
+#                 my $cb = shift;
+#                 $cui->mainloopExit;
+# 
+#             },
+        };
+    } @keys;
+
+    $buttons = $win->add('mybuttons', 'Buttonbox',
+        -buttons  => \@keys,
+        -vertical => 1,
+    );
+
+#     $cui->add_callback(1, sub {
+#         #$cui->mainloopExit;
+#         my $value = $buttons->get();
+#         $cui->leave_curses;
+#         print Dumper($value);
+#         sleep 3;
+#         #return $value;
+#     });
+
+    $buttons->focus();
+    $cui->mainloop;
+
+    clear_screen();
+    #endwin();
+    #$cui->clear();
+
+    return $ret;
+
+}
+
+
+sub clear_screen {
+#     require Term::Screen::Uni;
+#     my $scr = new Term::Screen::Uni;
+#     
+#     $scr->clrscr();
+    print "\033[2J";    #clear the screen
+    print "\033[0;0H"; #jump to 0,0
+}
+
+sub show_cli {
+    my ($self, $params) = @_;
+
     my @keys;
     my $menu = $self->{menu};
 
