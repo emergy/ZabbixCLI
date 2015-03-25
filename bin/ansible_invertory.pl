@@ -63,6 +63,7 @@ sub list {
     }
 
     print to_json($heap, {pretty => 1});
+    exit;
 }
 
 sub usage {
