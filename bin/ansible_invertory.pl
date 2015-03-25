@@ -1,5 +1,19 @@
 #!/usr/bin/env perl 
 
+=head1 NAME
+
+ansible_invertory.pl - Ansible invertory script
+
+=head1 SYNOPSIS
+
+ansible_invertory.pl --list
+
+=head1 ansible.cfg
+
+Add script path to hostfile key in defaults section
+
+=cut
+
 use strict;
 use warnings;
 use Data::Dumper;
@@ -52,6 +66,6 @@ sub list {
 }
 
 sub usage {
-    pod2usage(1);
+    pod2usage({-verbose => 2});
     exit;
 }
