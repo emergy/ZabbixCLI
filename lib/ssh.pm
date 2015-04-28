@@ -40,9 +40,13 @@ sub ssh {
 
     if ($config->{'hostopt'}) {
         if ($config->{'hostopt'}->{$name}) {
-            $config = config->new($config->{'hostopt'}->{$name}, $config, 1);
+            foreach (split/\|/, $config->{'hostopt'}->{$name}) {
+                $config = config->new($_, $config, 1);
+            }
         }
     }
+
+    print "private config: " . Dumper($config) if ($config->{debug});
 
     my $user = '';
     $user = $config->{'ssh-user'} . '@' if ($config->{'ssh-user'});

@@ -185,7 +185,7 @@ if ($link_template) {
 }
 
 
-if ($change_status and length($change_status) > 0) {
+if (defined $change_status) {
     my $status;
 
     if ($change_status eq 'enable' or $change_status eq '0') {
