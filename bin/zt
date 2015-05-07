@@ -40,7 +40,7 @@ Set teamplate name for clear-templates option
 
 =item link-template|L <name>
 
-Link template to host
+Link templates to host (name: template1,template2...)
 
 =item change-status|S 
 
@@ -169,17 +169,19 @@ if ($clear_all_not_in_templates) {
 }
 
 if ($link_template) {
-    my $templates = $t->get_template_ids_by_name($link_template);
-
-    foreach (@$templates) {
-        my ($id, $name) = each %$_;
-
-        print "Link template \"$name\" to this hosts [y/n]: ";
-
-        chomp(my $qa = readline(*STDIN));
-        
-        if ($qa eq 'y') {
-            $t->link_template($_->{hostid}, $id) foreach (@$search_res);
+    foreach my $template_name (split(/,/, $link_template)) {
+        my $templates = $t->get_template_ids_by_name($template_name);
+    
+        foreach (@$templates) {
+            my ($id, $name) = each %$_;
+    
+            print "Link template \"$name\" to this hosts [y/n]: ";
+    
+            chomp(my $qa = readline(*STDIN));
+            
+            if ($qa eq 'y') {
+                $t->link_template($_->{hostid}, $id) foreach (@$search_res);
+            }
         }
     }
 }
