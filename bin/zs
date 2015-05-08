@@ -7,7 +7,7 @@
 =head1 SYNOPSIS
 
     zs [-s] [-v] - Search hosts and print addresses
-    zs [-u ssh_user] [-k identity_file] [-n] [-K]
+    zs [-u ssh_user] [-k identity_file] [-n] [-K] [-U]
        [-c command] [-e] [-d] [-r] [-m] <query> [query] [query]...
 
 =head2 Options
@@ -59,11 +59,15 @@ Return only disabled hosts.
 
 =item -r
 
-Use regexport in query.
+Use regexport in query (zs -r 'server-\d\d\d')
 
 =item -m
 
 Mount mode. Mount via SSHFS changed host. Mount target may set in config
+
+=item -U
+
+Custom key and user (See config)
 
 =back
 
@@ -108,6 +112,10 @@ GetOptions(
     "disabled-only|d" => \$config->{'disabled-only'},
     "mount|m" => \$config->{'mount'},
     "regexp|r" => \$config->{'regexp'},
+    "U" => sub {
+        $config->{'ssh-key'} = $config->{'ssh-custom-key'},
+        $config->{'ssh-user'} = $config->{'ssh-custom-user'},
+    },
 ); 
 
 

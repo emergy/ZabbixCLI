@@ -6,6 +6,10 @@ zabbix-url = http://zabbix.host.corp/
 #ssh-user = root
 #ssh-options = -oForwardX11=yes
 
+# cmd "U" arg
+#ssh-custom-key = ~/.ssh/id_rsa
+#ssh-custom-user = superuser
+
 ansible_connection = ssh
 ansible_ssh_user = root
 ansible_ssh_private_key_file = ~/.ssh/id_rsa
