@@ -9,12 +9,14 @@ zi - IPMI Tool for ZabbixCLI
        zi [-v] [-r] <query> <command>
                 -e          Enabled hosts only
                 -d          Disabled hosts only
+                -r          <query> is regexp
+                -a          command to all hosts
                 --help      Thise message
                 --help-all  Verbose help
 
 =head1 EXAMPLES
 
-=over 4
+=over
 
 =item B<zi exemple.host.corp 'power <on|off|reset|soft>'>
 
@@ -66,6 +68,8 @@ For enable sol on Linux host add "console=ttyS1,115200" to kernel params
    More information about IPMItool see in documentation page:
        http://ipmitool.sourceforge.net/manpage.html
 
+=back
+
 =cut
 
 use strict;
@@ -91,6 +95,7 @@ GetOptions(
     "enabled-only|e" => \$config->{'enabled-only'},
     "disabled-only|d" => \$config->{'disabled-only'},
     "regexp|r" => \$config->{'regexp'},
+    "all|a" => \$config->{'all'},
 );
 
 print Dumper($config) if $config->{debug};
@@ -107,11 +112,18 @@ if ($command) {
     if ($#$search == 0) {
         ipmi(shift(@$search));
     } elsif ($#$search > 0) {
-        my $menu = menu->new({auto_change => 1});
-        $menu->make('host', $search);
-        my $change = $menu->show();
-
-        ipmi($change);
+        if ($config->{all}) {
+            foreach (@$search) {
+                print $_->{name} . "\n\t";
+                ipmi($_);
+            }
+        } else {
+            my $menu = menu->new({auto_change => 1});
+            $menu->make('host', $search);
+            my $change = $menu->show();
+    
+            ipmi($change);
+        }
     }
 } else {
     $host_obj->show_results($search, {
