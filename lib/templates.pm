@@ -207,7 +207,7 @@ sub show_templates {
     my $z = $self->{'zabbix'};
 
     my @hostids = map { $_ = $_->{hostid} } @$search;
-        
+
     my $host_obj = $z->get("host", {
         hostids => \@hostids,
         selectParentTemplates => [
