@@ -206,23 +206,20 @@ sub show_templates {
     my ($self, $search) = @_;
     my $z = $self->{'zabbix'};
 
-    foreach my $host (@$search) {
-        my $templates = $z->get("template", {
-            extendoutput => 1,
-            hostid => $host->{hostid},
-        });
+    my @hostids = map { $_ = $_->{hostid} } @$search;
+        
+    my $host_obj = $z->get("host", {
+        hostids => \@hostids,
+        selectParentTemplates => [
+            "name",
+        ],
+    });
 
-        print "Host $host->{name}: ";
-
-        if ($#{$templates->{result}} >= 0) {
-            foreach my $template (@{$templates->{result}}) {
-                print "\n\t$template->{name}";
-            }
-        } else {
-            print "template list empty";
+    foreach my $host (@{$host_obj->{result}}) {
+        print "Host $host->{name}: \n";
+        foreach my $template (@{$host->{parentTemplates}}) {
+            print "\t$template->{name}\n";
         }
-
-        print "\n\n";
     }
 }
 
