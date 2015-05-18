@@ -97,6 +97,7 @@ sub ssh {
     } else {
         print "\c[];$name\a";
         system($cmd);
+        print "\c[];Shell\a";
     }
 }
 
