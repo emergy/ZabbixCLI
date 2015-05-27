@@ -86,7 +86,7 @@ sub ssh {
     }
     
     # Debug
-    print '$cmd: ' . $cmd . "\n" if ($config->{debug});
+    print 'execute: ' . $cmd . "\n" if ($config->{verbose});
 
     if ($config->{'ssh-command'}) {
         if ($config->{verbose}) {
