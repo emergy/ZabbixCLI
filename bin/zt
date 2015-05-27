@@ -34,6 +34,10 @@ Verbose mode
 
 Clear all templates or unlink template set template-name option
 
+=item clear_items|I
+
+Clear all host items
+
 =item template-name|n <name>
 
 Set teamplate name for clear-templates option
@@ -96,6 +100,7 @@ my ($help,
     $template_name,
     $clear_all_not_in_templates,
     $search_tamplates,
+    $clear_items,
 );
 
 Getopt::Long::Configure ("bundling");
@@ -105,6 +110,7 @@ my $opts = GetOptions(
     "debug" => \$config->{debug},
     "template-name|n=s" => \$template_name,
     "clear-templates|C" => \$clear_templates,
+    "clear-host-items|I" => \$clear_items,
     "clear-all-not-in-templates|A" => \$clear_all_not_in_templates,
     "link-template|L=s" => \$link_template,
     "change-status|S=s" => \$change_status,
@@ -158,14 +164,9 @@ if ($get_templates) {
 }
 
 
-if ($clear_templates) {
+if ($clear_templates or $clear_items) {
     print "Clear templates\n";
-    $t->clear_templates($search_res, $template_name);
-}
-
-if ($clear_all_not_in_templates) {
-    print "Clear all not in templates\n";
-    $t->clear_all_not_in_templates($search_res);
+    $t->clear_templates($search_res, $template_name, $clear_templates, $clear_items);
 }
 
 if ($link_template) {
