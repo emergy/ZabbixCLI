@@ -22,6 +22,10 @@ zi - IPMI Tool for ZabbixCLI
 
 Performs a chassis control command to view and change the power state.
 
+=item B<zi exemple.host.corp 'sel list'>
+
+See event log
+
 =item B<zi exemple.host.corp 'user list'>
 
 Displays a list of user information for all defined userids.
