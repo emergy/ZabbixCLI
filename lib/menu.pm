@@ -299,8 +299,12 @@ sub get_change {
 sub ck_valid_change {
     my ($change, $max) = @_;
     my @chars = ( 1 .. $max );
-
-    return $change ~~ @chars;
+    my $r = 0;
+    foreach (@chars) {
+        $r = 1 if $change == $_;
+    }
+    return $r;
+    #return $change ~~ @chars;
 }
 
 1;
