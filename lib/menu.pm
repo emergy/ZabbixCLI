@@ -279,6 +279,7 @@ sub get_change {
     my $cache_file = $self->{params}->{cache_file};
     my $r;
 
+    return 0 if $self->{params}->{disable_cache_menu};
     return 0 unless (-e $cache_file);
 
     require DBI;

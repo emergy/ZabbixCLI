@@ -69,6 +69,10 @@ Mount mode. Mount via SSHFS changed host. Mount target may set in config
 
 Custom key and user (See config)
 
+=item -S
+
+Disable menu autoselect
+
 =back
 
 =cut
@@ -116,6 +120,7 @@ GetOptions(
         $config->{'ssh-key'} = $config->{'ssh-custom-key'},
         $config->{'ssh-user'} = $config->{'ssh-custom-user'},
     },
+    "disable-cache-menu|S" => \$config->{'disable_cache_menu'},
 ); 
 
 
@@ -143,7 +148,9 @@ foreach my $query (@ARGV) {
                 my $ip;
 
                 if (ref $interfaces->{agent} eq 'ARRAY') {
-                    my $iface_menu = menu->new();
+                    my $iface_menu = menu->new({
+                        disable_cache_menu => $config->{disable_cache_menu},
+                    });
                     $iface_menu->make('ip', $interfaces->{agent});
                     $ip = $iface_menu->show();
                 } else {
@@ -161,7 +168,10 @@ foreach my $query (@ARGV) {
         #
         } else {
             # Create and show menu
-            my $menu = menu->new({auto_change => 1});
+            my $menu = menu->new({
+                auto_change => 1,
+                disable_cache_menu => $config->{disable_cache_menu},
+            });
             $menu->make('host', \@search);
             my $change = $menu->show();
     
@@ -178,7 +188,9 @@ foreach my $query (@ARGV) {
 
                 # Show interfaces menu, if agent interfaces not only one
                 if (ref $interfaces->{agent} eq 'ARRAY') {
-                    my $iface_menu = menu->new();
+                    my $iface_menu = menu->new({
+                        disable_cache_menu => $config->{disable_cache_menu},
+                    });
                     $iface_menu->make('ip', $interfaces->{agent});
                     $ip = $iface_menu->show()->{ip};
                 } else {
