@@ -267,7 +267,8 @@ sub save_change {
 
     my $sth = $db->prepare("INSERT INTO menu_cache VALUES (NULL, ?, ?)");
     $Data::Dumper::Terse = 1;
-    $sth->execute(Dumper($menu), $change);
+    my @menu_list = sort { $a cmp $b } keys %$menu;
+    $sth->execute(Dumper(\@menu_list), $change);
 
     #$db->commit;
     $db->disconnect;
@@ -284,7 +285,8 @@ sub get_change {
     my $db = DBI->connect("dbi:SQLite:$cache_file","","", {RaiseError => 1, AutoCommit => 1});
     my $sth = $db->prepare("SELECT change FROM menu_cache WHERE menu = ?");
     $Data::Dumper::Terse = 1;
-    $sth->execute(Dumper($menu));
+    my @menu_list = sort { $a cmp $b } keys %$menu;
+    $sth->execute(Dumper(\@menu_list));
 
     while (my $res = $sth->fetchrow_hashref) {
         $r = $res->{change};
