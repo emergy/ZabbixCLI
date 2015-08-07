@@ -226,9 +226,16 @@ sub show_results {
                     $iflist = $iflist = $interfaces->{$params->{interface}}->{ip};
                 }
 
+                my $show_hostname;
+                if ($host->{status}) {
+                    $show_hostname = "\033[91m" . $host->{host} . "\033[0m";
+                } else {
+                    $show_hostname = $host->{host};
+                }
+
                 push @show_list, {
                     iflist => $iflist,
-                    hostname => $host->{host},
+                    hostname => $show_hostname,
                 };
 
                 $max_length = length($iflist) if ($max_length < length($iflist));
@@ -245,7 +252,14 @@ sub show_results {
 sub show_verbose {
     my ($host, $if) = @_;
 
-    print "Host: " . $host->{host} . "\n";
+    my $show_hostname;
+    if ($host->{status}) {
+        $show_hostname = "\033[91m" . $host->{host} . "\033[0m";
+    } else {
+        $show_hostname = $host->{host};
+    }
+
+    print "Host: " . $show_hostname . "\n";
 
     if (($host->{name}) and ($host->{name} ne $host->{host})) {
         print "Description: " . $host->{name} . "\n";
