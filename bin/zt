@@ -38,7 +38,7 @@ Clear all templates or unlink template set template-name option
 
 Clear all host items
 
-=item template-name|n <name>
+=item template-name|N <name>
 
 Set teamplate name for clear-templates option
 
@@ -108,7 +108,7 @@ my $opts = GetOptions(
     "help|h|?" => sub { usage() },
     "verbose|v+" => \$config->{verbose},
     "debug" => \$config->{debug},
-    "template-name|n=s" => \$template_name,
+    "template-name|N=s" => \$template_name,
     "clear-templates|C" => \$clear_templates,
     "clear-host-items|I" => \$clear_items,
     "clear-all-not-in-templates|A" => \$clear_all_not_in_templates,
