@@ -46,6 +46,7 @@ sub list {
     my $hosts_query = $z->get('host', {
         output => 'extend',
         selectGroups => 'extend',
+        selectInterfaces => 'extend',
     })->{result};
 
     my $heap = {};
@@ -54,6 +55,17 @@ sub list {
         foreach my $group (@{$host->{groups}}) {
             push @{$heap->{'group_all'}->{hosts}}, $host->{name};
             push @{$heap->{$group->{name}}->{hosts}}, $host->{name};
+            #print Dumper($host);exit;
+
+            if ($host->{interfaces}) {
+                foreach (@{$host->{interfaces}}) {
+                    if ($_->{type} eq "1" and $_->{main} eq "1") {
+                        if ($_->{ip} ne '0.0.0.0') {
+                            $heap->{'_meta'}->{hostvars}->{$host->{name}}->{ansible_ssh_host} = $_->{ip};
+                        }
+                    }
+                }
+            }
 
             foreach (keys %$config) {
                 next unless /^ansible_/;
