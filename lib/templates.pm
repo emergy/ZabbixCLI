@@ -258,6 +258,7 @@ sub show_templates {
         foreach my $template (@{$host->{parentTemplates}}) {
             print "\t$template->{name}\n";
         }
+        print "\n";
     }
 }
 
