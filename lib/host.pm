@@ -284,7 +284,7 @@ sub show_verbose {
         }
     }
 
-    if ($host->{inventory}) {
+    if ($host->{inventory} && ref $host->{inventory} eq 'HASH') {
         print "  Inventory:\n";
         foreach my $key (keys $host->{inventory}) {
             if (defined $host->{inventory}->{$key} && $host->{inventory}->{$key} ne '') {
