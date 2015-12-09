@@ -118,12 +118,20 @@ sub search {
         }
     
         $config->{'sortfield'} ||= "host";
-    
+        my $select_inventory;
+        my $select_macros;
+
+        if (defined $config->{verbose} && $config->{verbose} == 2) {
+            $select_inventory = 'extend';
+            $select_macros = 'extend';
+        }
     
         my $res = $zabbix->get("host", {
             search      => $search_opts,
             searchByAny => $config->{'searchByAny'},
             sortfield   => $config->{'sortfield'},
+            selectInventory => $select_inventory,
+            selectMacros => $select_macros,
         });
     
     
@@ -274,6 +282,24 @@ sub show_verbose {
         } else {
             show_verbose_if($if->{agent});
         }
+    }
+
+    if ($host->{inventory}) {
+        print "  Inventory:\n";
+        foreach my $key (keys $host->{inventory}) {
+            if (defined $host->{inventory}->{$key} && $host->{inventory}->{$key} ne '') {
+                print "    $key: $host->{inventory}->{$key}\n";
+            }
+        }
+        print "\n";
+    }
+
+    if ($host->{macros} && ref $host->{macros} eq 'ARRAY') {
+        print "  Macros:\n";
+        foreach my $macros (@{$host->{macros}}) {
+            print "    $macros->{macro}: $macros->{value}\n";
+        }
+        print "\n";
     }
 
     if (($if->{ipmi}->{ip}) or ($if->{ipmi}->{dns})) {
