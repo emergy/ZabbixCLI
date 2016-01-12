@@ -259,7 +259,7 @@ sub save_change {
     }
 
     require DBI;
-    my $db = DBI->connect("dbi:SQLite:$cache_file","","", {RaiseError => 1, AutoCommit => 1});
+    my $db = DBI->connect("dbi:SQLite2:$cache_file","","", {RaiseError => 1, AutoCommit => 1});
 
     if ($create_table) {
         $db->do("CREATE TABLE menu_cache (id INTEGER PRIMARY KEY, menu TEXT, change INTEGER)");
@@ -283,7 +283,7 @@ sub get_change {
     return 0 unless (-e $cache_file);
 
     require DBI;
-    my $db = DBI->connect("dbi:SQLite:$cache_file","","", {RaiseError => 1, AutoCommit => 1});
+    my $db = DBI->connect("dbi:SQLite2:$cache_file","","", {RaiseError => 1, AutoCommit => 1});
     my $sth = $db->prepare("SELECT change FROM menu_cache WHERE menu = ?");
     $Data::Dumper::Terse = 1;
     my @menu_list = sort { $a cmp $b } keys %$menu;
