@@ -206,7 +206,12 @@ sub show_cli {
     system("clear");
 
     for (my $i = 1; $i <= $#keys + 1; $i++) {
-        print "$i) $keys[$i - 1]\n";
+        my $host_status = $menu->{$keys[$i - 1]}->{status};
+        if ($host_status eq '0') {
+            print "$i) $keys[$i - 1]\n";
+        } else {
+            print "$i) \033[91m$keys[$i - 1]\033[0m\n";
+        }
         $count = $i;
     }
     
