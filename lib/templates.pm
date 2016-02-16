@@ -253,8 +253,14 @@ sub show_templates {
         ],
     });
 
-    foreach my $host (@{$host_obj->{result}}) {
-        print "Host $host->{name}: \n";
+    my @host_list = sort {$a->{name} cmp $b->{name} } @{$host_obj->{result}};
+
+    foreach my $host (@host_list) {
+        if ($host->{status} eq '0') {
+            print "Host $host->{name}: \n";
+        } else {
+            print "Host \033[91m$host->{name}\033[0m: \n";
+        }
         foreach my $template (@{$host->{parentTemplates}}) {
             print "\t$template->{name}\n";
         }
