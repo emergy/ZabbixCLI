@@ -123,7 +123,7 @@ sub search {
         my $select_inventory;
         my $select_macros;
 
-        if (defined $config->{verbose} && $config->{verbose} == 2) {
+        if (defined $config->{verbose} && $config->{verbose} > 1) {
             $select_inventory = 'extend';
             $select_macros = 'extend';
         }
