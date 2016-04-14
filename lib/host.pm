@@ -31,6 +31,8 @@ host
 
 =over 4
 
+B<filter> - use filter or search in zabbix api
+
 B<clean-proto> - Remove protocol from query (s;^(?:https?|ftp)://(.*?)(/|:\d+)?$;$1;)
 
 B<fields> - Fields for search (Default: ["ip", "dns", "name", "host"])
@@ -125,16 +127,22 @@ sub search {
             $select_inventory = 'extend';
             $select_macros = 'extend';
         }
-    
-        my $res = $zabbix->get("host", {
+
+        my $get_options = { 
             search      => $search_opts,
             searchByAny => $config->{'searchByAny'},
             sortfield   => $config->{'sortfield'},
             selectInventory => $select_inventory,
             selectMacros => $select_macros,
-        });
+        };
+
+        unless ($config->{filter}) {
+            $get_options->{search} = $search_opts;
+        } else {
+            $get_options->{filter} = $search_opts;
+        }
     
-    
+        my $res = $zabbix->get("host", $get_options);
     
         if (ref $res->{result} eq 'ARRAY') {
             foreach my $host (@{$res->{result}}) {
