@@ -242,12 +242,8 @@ sub show_results {
                     $iflist = $iflist = $interfaces->{$params->{interface}}->{ip};
                 }
 
-                my $show_hostname;
-                if ($host->{status}) {
-                    $show_hostname = "\033[91m" . $host->{host} . "\033[0m";
-                } else {
-                    $show_hostname = $host->{host};
-                }
+                my $show_hostname = $host->{name} || $host->{host};
+                $show_hostname =~ s/^(.*)$/\033[91m$1\033[0m/ if ($host->{status});
 
                 push @show_list, {
                     iflist => $iflist,
