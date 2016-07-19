@@ -119,7 +119,7 @@ sub search {
             $search_opts->{$_} = $query foreach (@{$config->{'fields'}});
         }
     
-        $config->{'sortfield'} ||= "host";
+        $config->{'sortfield'} ||= [ "name", "host" ];
         my $select_inventory;
         my $select_macros;
 
