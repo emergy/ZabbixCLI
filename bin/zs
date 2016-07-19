@@ -73,6 +73,10 @@ Custom key and user (See config)
 
 Disable menu autoselect
 
+=item -D
+
+Disable colors
+
 =back
 
 =cut
@@ -121,6 +125,7 @@ GetOptions(
         $config->{'ssh-user'} = $config->{'ssh-custom-user'},
     },
     "disable-cache-menu|S" => \$config->{'disable_cache_menu'},
+    "disable-colors|D" =>\$config->{'disable_colors'},
 ); 
 
 
@@ -171,6 +176,7 @@ foreach my $query (@ARGV) {
             my $menu = menu->new({
                 auto_change => 1,
                 disable_cache_menu => $config->{disable_cache_menu},
+                disable_colors => $config->{'disable_colors'},
             });
             $menu->make('host', \@search);
             my $change = $menu->show();
@@ -212,6 +218,7 @@ foreach my $query (@ARGV) {
         # Just show find result
         $host_obj->show_results(\@search, {
             verbose => $config->{verbose},
+            disable_colors => $config->{disable_colors},
         });
     }
 }
