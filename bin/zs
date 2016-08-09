@@ -178,7 +178,7 @@ foreach my $query (@ARGV) {
                 disable_cache_menu => $config->{disable_cache_menu},
                 disable_colors => $config->{'disable_colors'},
             });
-            $menu->make('host', \@search);
+            $menu->make([ 'name', 'host' ], \@search);
             my $change = $menu->show();
     
             # Get network interfaces information

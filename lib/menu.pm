@@ -69,6 +69,17 @@ sub make {
     my ($self, $key, $data_array) = @_;
 
     foreach my $data (@$data_array) {
+        if (ref $key eq 'ARRAY') {
+            my @key_list = @{ $key };
+
+            foreach (@key_list) {
+                if ($data->{$_}) {
+                    $key = $_;
+                    last;
+                }
+            }
+        }
+
         $self->{menu}->{ $data->{$key} } = $data;
         push @{$self->{keys}}, $data->{$key};
     }
