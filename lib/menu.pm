@@ -81,7 +81,7 @@ sub make {
         }
 
         $self->{menu}->{ $data->{$key} } = $data;
-        push @{$self->{keys}}, $data->{$key};
+        push @{ $self->{keys} }, $data->{$key};
     }
 
     return $self;
@@ -218,7 +218,7 @@ sub show_cli {
 
     for (my $i = 1; $i <= $#keys + 1; $i++) {
         my $host_status = $menu->{$keys[$i - 1]}->{status};
-        if (($host_status eq '0') or ($self->{params}->{disable_colors})) {
+        if (! defined $host_status or ($host_status eq '0') or ($self->{params}->{disable_colors})) {
             print "$i) $keys[$i - 1]\n";
         } else {
             print "$i) \033[91m$keys[$i - 1]\033[0m\n";
