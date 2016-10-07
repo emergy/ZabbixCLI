@@ -316,10 +316,10 @@ sub raw_request {
 		$self->_dbgmsg("Starting method $object.$op");
 	}
 	
-	if ($params) {
-		$params->{output} = $self->{Output}
-			if (reftype($params) eq 'HASH' and not defined $params->{output});
-	}
+ 	if ($params) {
+        #$params->{output} = $self->{Output}
+        #		if (reftype($params) eq 'HASH' and not defined $params->{output});
+ 	}
 	else {
 		$params = [];
 	}
