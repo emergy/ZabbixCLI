@@ -28,6 +28,7 @@ sub new {
         $config->{'zabbix-url'},
         $config->{'zabbix-username'},
         $config->{'zabbix-password'},
+        $config->{debug},
     );
 
     $self->{'config'} = $config;
@@ -233,6 +234,125 @@ sub change_status {
         }
     }
 }
+
+
+=item change_macros($search, $macros_list);
+
+    Change host macros
+
+    change_macros($search, [
+        'PXE.OS=centos',
+        'PXE.STATUS=1',
+    ]);
+
+    Delete host macros
+
+    change_macros($search, [
+        'PXE.OS=',
+        'PXE.STATUS',
+    ]);
+
+=cut
+
+sub change_macros {
+    my ($self, $search, $macros_list) = @_;
+
+    foreach my $host (@$search) {
+        my $current_macros_list = $self->{'zabbix'}->get('usermacro', {
+            hostids => $host->{hostid},
+            output => 'extend',
+        });
+
+        if ($current_macros_list->{error}) {
+            print $current_macros_list->{error}->{message} . "\n";
+            print $current_macros_list->{error}->{data} . "\n";
+
+            exit 1;
+        }
+
+        my $macros_is_exist = 0;
+
+        foreach (@$macros_list) {
+            my ($macro, $value) = split/=/;
+
+            foreach my $current_macros (@{ $current_macros_list->{result} }) {
+                
+                if ($macro !~ /^{\$.*}$/) {
+                    $macro =~ s/^(.*)$/{\$$1}/;
+                }
+
+                if (uc($macro) eq $current_macros->{macro}) {
+                    if ($value) {
+                        if ($value ne $current_macros->{value}) {
+                            my $update_macro_result = $self->{'zabbix'}->update('usermacro', {
+                                hostmacroid => $current_macros->{hostmacroid},
+                                value => $value,
+                            });
+                            
+                            if ($update_macro_result->{error}) {
+                                print $update_macro_result->{error}->{message} . "\n";
+                                print $update_macro_result->{error}->{data} . "\n";
+
+                                exit 1;
+                            }
+                        }
+                    } else {
+                        my $delete_macro_result = $self->{'zabbix'}->delete('usermacro', [
+                            $current_macros->{hostmacroid},
+                        ]);
+
+                        if ($delete_macro_result->{error}) {
+                            print $delete_macro_result->{error}->{message} . "\n";
+                            print $delete_macro_result->{error}->{data} . "\n";
+
+                            exit 1;
+                        }
+                    }
+
+                    $macros_is_exist = 1;
+                } elsif (! $value) {
+                    $macros_is_exist = 1;
+                }
+            }
+
+            unless ($macros_is_exist) {
+                my $create_macro_result = $self->{'zabbix'}->create('usermacro', {
+                    hostid => $host->{hostid},
+                    macro => uc($macro),
+                    value => $value,
+                });
+
+                if ($create_macro_result->{error}) {
+                    print $create_macro_result->{error}->{message} . "\n";
+                    print $create_macro_result->{error}->{data} . "\n";
+
+                    exit 1;
+                }
+            }
+        }
+
+        my $result_macros_list = $self->{'zabbix'}->get('usermacro', {
+            hostids => $host->{hostid},
+            output => 'extend',
+        });
+
+        if ($result_macros_list->{error}) {
+            print $result_macros_list->{error}->{message} . "\n";
+            print $result_macros_list->{error}->{data} . "\n";
+
+            exit 1;
+        }
+
+        print $host->{host} . ": \n";
+
+        foreach my $macro (@{ $result_macros_list->{result} }) {
+            printf("%30s: %s\n", $macro->{macro}, $macro->{value});
+        }
+
+        print "\n";
+    }
+}
+
 
 =item show_templates($search)
 

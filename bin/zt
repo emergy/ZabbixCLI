@@ -50,6 +50,10 @@ Link templates to host (name: template1,template2...)
 
 Change monitoring status
 
+=item change-macros|m <name=value> -m <name=value> -m <name>
+
+Change or delete host macros
+
 =item search-tamplates|s
 
 Search exist templates on zabbix server by name
@@ -101,6 +105,8 @@ my ($help,
     $clear_all_not_in_templates,
     $search_tamplates,
     $clear_items,
+    @change_macros,
+    @delete_macros,
 );
 
 Getopt::Long::Configure ("bundling");
@@ -114,6 +120,7 @@ my $opts = GetOptions(
     "clear-all-not-in-templates|A" => \$clear_all_not_in_templates,
     "link-template|L=s" => \$link_template,
     "change-status|S=s" => \$change_status,
+    "change-macros|m=s" => \@change_macros,
     "search-tamplates|s=s" => \$search_tamplates,
     "get-templates|g" => \$get_templates,
     "ssh-user|u=s" =>\$config->{'ssh-user'},
@@ -202,6 +209,9 @@ if (defined $change_status) {
     $t->change_status($search_res, $status);
 }
 
+if ($#change_macros >= 0) {
+    $t->change_macros($search_res, \@change_macros);
+}
 
 sub usage {
     pod2usage(1);
