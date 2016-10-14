@@ -349,6 +349,13 @@ sub change_macros {
             printf("%30s: %s\n", $macro->{macro}, $macro->{value});
         }
 
+        if ($self->{config}->{get_url_after_update_macros}) {
+            require HTTP::Request;
+            my $response = HTTP::Request->new(
+                GET => $self->{config}->{get_url_after_update_macros}
+            );
+        }
+
         print "\n";
     }
 }
