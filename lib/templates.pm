@@ -351,9 +351,14 @@ sub change_macros {
 
         if ($self->{config}->{get_url_after_update_macros}) {
             require HTTP::Request;
-            my $response = HTTP::Request->new(
+            require LWP::UserAgent;
+
+            my $request = HTTP::Request->new(
                 GET => $self->{config}->{get_url_after_update_macros}
             );
+
+            my $ua = LWP::UserAgent->new();
+            my $response = $ua->request($request);
         }
 
         print "\n";
