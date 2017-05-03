@@ -122,10 +122,12 @@ sub search {
         $config->{'sortfield'} ||= [ "name", "host" ];
         my $select_inventory;
         my $select_macros;
+        my $select_groups;
 
         if (defined $config->{verbose} && $config->{verbose} > 1) {
             $select_inventory = 'extend';
             $select_macros = 'extend';
+            $select_groups = 'extend';
         }
 
         my $get_options = { 
@@ -134,6 +136,7 @@ sub search {
             sortfield   => $config->{'sortfield'},
             selectInventory => $select_inventory,
             selectMacros => $select_macros,
+            selectGroups => $select_groups,
         };
 
         unless ($config->{filter}) {
@@ -276,6 +279,14 @@ sub show_verbose {
     if (($host->{name}) and ($host->{name} ne $host->{host})) {
         print "Description: " . $host->{name} . "\n";
     }
+    
+    if (($host->{groups}) and ($#{ $host->{groups} } >=0)) {
+        print "  Groups:\n";
+        foreach (@{ $host->{groups} }) {
+            print "    $_->{name}\n";
+        }
+        print "\n";
+    }
 
     if ($if->{agent}) {
         print "  Interface agent:\n";
@@ -298,6 +309,11 @@ sub show_verbose {
         print "\n";
     }
 
+    if (($if->{ipmi}->{ip}) or ($if->{ipmi}->{dns})) {
+        print "  Interface IPMI\n";
+        show_verbose_if($if->{ipmi}, $host->{ipmi_username}, $host->{ipmi_password});
+    }
+
     if ($host->{macros} && ref $host->{macros} eq 'ARRAY') {
         print "  Macros:\n";
         foreach my $macros (@{$host->{macros}}) {
@@ -306,10 +322,6 @@ sub show_verbose {
         print "\n";
     }
 
-    if (($if->{ipmi}->{ip}) or ($if->{ipmi}->{dns})) {
-        print "  Interface IPMI\n";
-        show_verbose_if($if->{ipmi}, $host->{ipmi_username}, $host->{ipmi_password});
-    }
     print "----------------------------------------------\n\n";
 }
 
