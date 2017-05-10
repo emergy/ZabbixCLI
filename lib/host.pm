@@ -137,6 +137,7 @@ sub search {
             selectInventory => $select_inventory,
             selectMacros => $select_macros,
             selectGroups => $select_groups,
+            searchWildcardsEnabled =>  $config->{'searchWildcardsEnabled'},
         };
 
         unless ($config->{filter}) {
