@@ -6,7 +6,7 @@
 
 =head1 SYNOPSIS
 
-    zd [-p] [-l n]
+    zd [-p] [-l n] [-g group_name,group_name...]
 
 =head2 Options
 
@@ -24,6 +24,10 @@ Priority output
 
 Number of last tickets
 
+=item -g
+
+Group list
+
 =back
 
 =cut
@@ -40,7 +44,7 @@ use Pod::Usage;
 
 
 my $config = config->new("$RealBin/../etc/config");
-my @dashboard_colors = $config->{dashboard_colors} ? split(/\s+/, $config->{dashboard_colors}) : (0, 96, 93, 91, 31);
+my @dashboard_colors = $config->{dashboard_colors} ? split(/\s+/, $config->{dashboard_colors}) : (0, 96, 93, 91, 31, 41);
 
 Getopt::Long::Configure("bundling");
 GetOptions(
@@ -50,6 +54,7 @@ GetOptions(
     "limit|l=s" => \$config->{dashboard_limit},
     "no-colors|c" => \$config->{dashboard_no_colors},
     "priority|p" => \$config->{dashboard_priority_output},
+    "groups|g=s" => \$config->{dashboard_groups_list},
 );
 
 $config->{dashboard_limit} ||= 20;
@@ -60,51 +65,79 @@ my $z= Net::Zabbix->new(
     $config->{'zabbix-password'},
 );
 
-my $triggers = $z->get('trigger', {
-    skipDependent => 1,
-    monitored => 1,
-    filter => {
-        value => 1,
-    },
-    limit => $config->{dashboard_limit},
-    expandDescription => 1,
-    expandExpression => 1,
-    selectHosts => [ "hostis", "name" ],
-    #sortfield => [ "priority", "lastchange" ],
-    #sortfield => [ "lastchange" ],
-    sortfield => $config->{dashboard_priority_output} ? [ "priority", "lastchange" ] : [ "lastchange" ],
-    sortorder => "DESC",
-});
+if ($config->{dashboard_groups_list}) {
+    foreach my $group_name (split /[\s,:]/, $config->{dashboard_groups_list}) {
+        my $groups = $z->get('hostgroup', {
+            search => {
+                name => $group_name,
+            },
+            searchWildcardsEnabled => 1,
+        });
+
+        zabbix_error($groups);
+
+        foreach my $group (@{ $groups->{result} }) {
+            print $group->{name} . ":\n";
+            show_triggers($group->{groupid});
+        }
+    }
+} else {
+    show_triggers();
+}
+
+sub show_triggers {
+    my ($groupid) = @_;
+    my $triggers = $z->get('trigger', {
+        skipDependent => 1,
+        monitored => 1,
+        filter => {
+            value => 1,
+        },
+        limit => $config->{dashboard_limit},
+        expandDescription => 1,
+        expandExpression => 1,
+        selectHosts => [ "hostis", "name" ],
+        sortfield => $config->{dashboard_priority_output} ? [ "priority", "lastchange" ] : [ "lastchange" ],
+        sortorder => "DESC",
+        groupids => $groupid,
+    });
 
 # print Dumper($triggers);exit;
 
-unless ($triggers->{result}) {
-    if ($triggers->{error}) {
-        print $triggers->{error}->{message} . "\n" . $triggers->{error}->{data} . "\n";
-        exit 1;
-    } else {
-        die "unknown error";
+    zabbix_error($triggers);
+
+    my $max_hostname_len = 0;
+    foreach (@{ $triggers->{result} }) {
+        $max_hostname_len = length($_->{hosts}[0]->{name}) if $max_hostname_len < length($_->{hosts}[0]->{name});
+    }
+
+    foreach (@{ $triggers->{result} }) {
+        next if ! $_->{hosts} or ! $_->{hosts}[0]->{name};
+        print "\t" if $groupid;
+        if ($config->{dashboard_no_colors}) {
+            printf("%-${max_hostname_len}s : %s : (%s)\n",
+                        $_->{hosts}[0]->{name},
+                        $_->{description},
+                        get_age($_->{lastchange}));
+        } else {
+            my $color = "\033[" . $dashboard_colors[$_->{priority}] . "m";
+            printf("\033[0m%-${max_hostname_len}s\033[m : $color%s\033[m : \033[90m(%s)\033[m\n",
+                        $_->{hosts}[0]->{name},
+                        $_->{description},
+                        get_age($_->{lastchange}));
+        }
     }
 }
 
-my $max_hostname_len = 0;
-foreach (@{ $triggers->{result} }) {
-    $max_hostname_len = length($_->{hosts}[0]->{name}) if $max_hostname_len < length($_->{hosts}[0]->{name});
-}
-
-foreach (@{ $triggers->{result} }) {
-    next if ! $_->{hosts} or ! $_->{hosts}[0]->{name};
-    if ($config->{dashboard_no_colors}) {
-        printf("%-${max_hostname_len}s : %s : (%s)\n",
-                    $_->{hosts}[0]->{name},
-                    $_->{description},
-                    get_age($_->{lastchange}));
-    } else {
-        my $color = "\033[" . $dashboard_colors[$_->{priority}] . "m";
-        printf("\033[0m%-${max_hostname_len}s\033[m : $color%s\033[m : \033[90m(%s)\033[m\n",
-                    $_->{hosts}[0]->{name},
-                    $_->{description},
-                    get_age($_->{lastchange}));
+sub zabbix_error {
+    my ($obj) = @_;
+    unless ($obj->{result}) {
+        if ($obj->{error}) {
+            print $obj->{error}->{message} . "\n" . $obj->{error}->{data} . "\n";
+            exit 1;
+        } else {
+            die "unknown error";
+        }
     }
 }
 
