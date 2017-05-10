@@ -1,5 +1,33 @@
 #!/usr/bin/env perl
 
+=head1 NAME
+
+    zd - ZabbixCLI Dashboard
+
+=head1 SYNOPSIS
+
+    zd [-p] [-l n]
+
+=head2 Options
+
+=over 4
+
+=item -h
+
+This message.
+
+=item -p
+
+Priority output
+
+=item -l
+
+Number of last tickets
+
+=back
+
+=cut
+
 use warnings;
 use strict;
 use Data::Dumper;
@@ -8,6 +36,7 @@ use lib "$RealBin/../lib";
 use config;
 use Net::Zabbix;
 use Getopt::Long;
+use Pod::Usage;
 
 
 my $config = config->new("$RealBin/../etc/config");
@@ -87,3 +116,7 @@ sub get_age {
     return $age;
 }
 
+sub usage {
+    pod2usage(1);
+    exit;
+}
