@@ -87,18 +87,3 @@ sub get_age {
     return $age;
 }
 
-# my $events = $z->get('event',
-#     {
-#         output => 'extend',
-#         selectHosts => 'extend',
-#         value => 1,
-#         sortfield => 'clock',
-#         limit => 20
-#     }
-# );
-# 
-# foreach my $event (@{$events->{result}}) {
-#     print Dumper($event);
-# #    print $event->{hosts}[0]->{host} . "\n";
-# }
-
