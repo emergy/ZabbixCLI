@@ -2,6 +2,12 @@ zabbix-username = admin
 zabbix-password = secret
 zabbix-url = http://zabbix.host.corp/
 
+dashboard_limit = 20
+dashboard_no_colors = 0
+dashboard_priority_output = 0
+
+searchWildcardsEnabled = 0
+
 #ssh-key = ~/.ssh/production
 #ssh-user = root
 #ssh-options = -oForwardX11=yes

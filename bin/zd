@@ -1,0 +1,104 @@
+#!/usr/bin/env perl
+
+use warnings;
+use strict;
+use Data::Dumper;
+use FindBin '$RealBin';
+use lib "$RealBin/../lib";
+use config;
+use Net::Zabbix;
+use Getopt::Long;
+
+
+my $config = config->new("$RealBin/../etc/config");
+my @dashboard_colors = $config->{dashboard_colors} ? split(/\s+/, $config->{dashboard_colors}) : (0, 96, 93, 91, 31);
+
+Getopt::Long::Configure("bundling");
+GetOptions(
+    "help|h|?" => sub { usage() },
+    "verbose|v+" => \$config->{verbose},
+    "debug" => \$config->{debug},
+    "limit|l=s" => \$config->{dashboard_limit},
+    "no-colors|c" => \$config->{dashboard_no_colors},
+    "priority|p" => \$config->{dashboard_priority_output},
+);
+
+$config->{dashboard_limit} ||= 20;
+
+my $z= Net::Zabbix->new(
+    $config->{'zabbix-url'},
+    $config->{'zabbix-username'},
+    $config->{'zabbix-password'},
+);
+
+my $triggers = $z->get('trigger', {
+    skipDependent => 1,
+    monitored => 1,
+    filter => {
+        value => 1,
+    },
+    limit => $config->{dashboard_limit},
+    expandDescription => 1,
+    expandExpression => 1,
+    selectHosts => [ "hostis", "name" ],
+    #sortfield => [ "priority", "lastchange" ],
+    #sortfield => [ "lastchange" ],
+    sortfield => $config->{dashboard_priority_output} ? [ "priority", "lastchange" ] : [ "lastchange" ],
+    sortorder => "DESC",
+});
+
+# print Dumper($triggers);exit;
+
+unless ($triggers->{result}) {
+    if ($triggers->{error}) {
+        print $triggers->{error}->{message} . "\n" . $triggers->{error}->{data} . "\n";
+        exit 1;
+    } else {
+        die "unknown error";
+    }
+}
+
+my $max_hostname_len = 0;
+foreach (@{ $triggers->{result} }) {
+    $max_hostname_len = length($_->{hosts}[0]->{name}) if $max_hostname_len < length($_->{hosts}[0]->{name});
+}
+
+foreach (@{ $triggers->{result} }) {
+    next if ! $_->{hosts} or ! $_->{hosts}[0]->{name};
+    if ($config->{dashboard_no_colors}) {
+        printf("%-${max_hostname_len}s : %s : (%s)\n",
+                    $_->{hosts}[0]->{name},
+                    $_->{description},
+                    get_age($_->{lastchange}));
+    } else {
+        my $color = "\033[" . $dashboard_colors[$_->{priority}] . "m";
+        printf("\033[0m%-${max_hostname_len}s\033[m : $color%s\033[m : \033[90m(%s)\033[m\n",
+                    $_->{hosts}[0]->{name},
+                    $_->{description},
+                    get_age($_->{lastchange}));
+    }
+}
+
+sub get_age {
+    my ($lastchange) = @_;
+    require Time::Ago;
+    my $age = Time::Ago->in_words(time - $lastchange);
+    utf8::encode($age);
+    return $age;
+}
+
+# my $events = $z->get('event',
+#     {
+#         output => 'extend',
+#         selectHosts => 'extend',
+#         value => 1,
+#         sortfield => 'clock',
+#         limit => 20
+#     }
+# );
+# 
+# foreach my $event (@{$events->{result}}) {
+#     print Dumper($event);
+# #    print $event->{hosts}[0]->{host} . "\n";
+# }
+
