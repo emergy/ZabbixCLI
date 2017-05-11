@@ -6,16 +6,13 @@
 
 =head1 SYNOPSIS
 
-    zd [-p] [-l n] [-g group_name,group_name...]
-    zd [-p] [-l n] [-s screen_name,screen_name...]
+    zd [-v] [-p] [-l n] [-g group_name,group_name...]
+    zd [-v] [-p] [-l n] [-s screen_name,screen_name...]
+    zd [-v] [-p] [-l n] [-h host_name,host_name...]
 
 =head2 Options
 
 =over 4
-
-=item -h
-
-This message.
 
 =item -p
 
@@ -32,6 +29,10 @@ Group list
 =item -s
 
 Screen list
+
+=item -h
+
+Host list
 
 =back
 
@@ -74,7 +75,7 @@ my @dashboard_colors = $config->{dashboard_colors} ? split(/\s+/, $config->{dash
 
 Getopt::Long::Configure("bundling");
 GetOptions(
-    "help|h|?" => sub { usage() },
+    "help|?" => sub { usage() },
     "verbose|v+" => \$config->{verbose},
     "debug" => \$config->{debug},
     "limit|l=s" => \$config->{dashboard_limit},
@@ -82,7 +83,7 @@ GetOptions(
     "priority|p" => \$config->{dashboard_priority_output},
     "groups|g=s" => \$config->{dashboard_groups_list},
     "screen|s=s" => \$config->{dashboard_screen_list},
-    "show-expressions|e" => \$config->{dashboard_screen_show_expressions},
+    "hosts|h=s" => \$config->{hosts_list},
 );
 
 $config->{dashboard_limit} ||= 20;
@@ -91,9 +92,32 @@ my $z= Net::Zabbix->new(
     $config->{'zabbix-url'},
     $config->{'zabbix-username'},
     $config->{'zabbix-password'},
+    $config->{debug},
 );
 
-if ($config->{dashboard_screen_list}) {
+if ($config->{hosts_list}) {
+    my @hostid_list;
+    foreach my $query (split(/[\s,:]/, $config->{hosts_list})) {
+        $query = "*".$query."*" if $config->{searchWildcardsEnabled} and $query !~ /\*/;
+        my $hosts = $z->get('host', {
+            search => {
+                name => $query,
+                ip => $query,
+            },
+            searchByAny => 1,
+            searchWildcardsEnabled => $config->{searchWildcardsEnabled},
+            sortfield => "name",
+        });
+
+        zabbix_error($hosts);
+
+        foreach my $host (@{ $hosts->{result} }) {
+            push @hostid_list, $host->{hostid};
+        }
+
+        show_triggers(undef, \@hostid_list);
+    }
+} elsif ($config->{dashboard_screen_list}) {
     foreach my $screen_query (split /[\s,:]/, $config->{dashboard_screen_list}) {
         my $screens = $z->get('screen', {
             #output => "extend",
@@ -147,7 +171,7 @@ if ($config->{dashboard_screen_list}) {
 }
 
 sub show_triggers {
-    my ($groupid) = @_;
+    my ($groupid, $hostid_list) = @_;
     my $triggers = $z->get('trigger', {
         skipDependent => 1,
         monitored => 1,
@@ -161,6 +185,7 @@ sub show_triggers {
         sortfield => $config->{dashboard_priority_output} ? [ "priority", "lastchange" ] : [ "lastchange" ],
         sortorder => "DESC",
         groupids => $groupid,
+        hostids => $hostid_list,
     });
 
 # print Dumper($triggers);exit;
@@ -178,20 +203,33 @@ sub show_triggers {
 
         if ($config->{dashboard_no_colors}) {
             printf("%-${max_hostname_len}s : %s : (%s)\n",
-                        $trigger->{hosts}[0]->{name},
-                        $trigger->{description},
+                        utf8($trigger->{hosts}[0]->{name}),
+                        utf8($trigger->{description}),
                         get_age($trigger->{lastchange}));
         } else {
             my $color = "\033[" . $dashboard_colors[$trigger->{priority}] . "m";
             printf("\033[0m%-${max_hostname_len}s\033[m : $color%s\033[m : \033[90m(%s)\033[m\n",
-                        $trigger->{hosts}[0]->{name},
-                        $trigger->{description},
+                        utf8($trigger->{hosts}[0]->{name}),
+                        utf8($trigger->{description}),
                         get_age($trigger->{lastchange}));
         }
 
-        if ($config->{dashboard_screen_show_expressions}) {
+        if ($config->{verbose}) {
             print "\t" if $groupid;
             print "\033[90m" unless $config->{dashboard_no_colors};
+
+            if ($trigger->{templateid}) {
+                my $templates = $z->get('template', {
+                    templateids => $trigger->{templateid},
+                });
+
+                zabbix_error($templates);
+
+                if ($templates->{result} and $#{ $templates->{result} } >=0) {
+                    print utf8($templates->{result}[0]->{host}) . ": ";
+                }
+            }
+
             print "\t" . $trigger->{expression} . "\n";
             print "\033[m" unless $config->{dashboard_no_colors};
         }
@@ -216,6 +254,12 @@ sub get_age {
     my $age = Time::Ago->in_words(time - $lastchange);
     utf8::encode($age);
     return $age;
+}
+
+sub utf8 {
+    my ($text) = @_;
+    utf8::encode($text);
+    return $text;
 }
 
 sub usage {
