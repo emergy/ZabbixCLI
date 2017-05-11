@@ -7,6 +7,7 @@
 =head1 SYNOPSIS
 
     zd [-p] [-l n] [-g group_name,group_name...]
+    zd [-p] [-l n] [-s screen_name,screen_name...]
 
 =head2 Options
 
@@ -28,6 +29,10 @@ Number of last tickets
 
 Group list
 
+=item -s
+
+Screen list
+
 =back
 
 =cut
@@ -42,6 +47,27 @@ use Net::Zabbix;
 use Getopt::Long;
 use Pod::Usage;
 
+my $resourcetype_dict = {
+	GRAPH => 0,
+	SIMPLE_GRAPH => 1,
+	MAP => 2,
+	PLAIN_TEXT => 3,
+	HOSTS_INFO => 4,
+	TRIGGERS_INFO => 5,
+	SERVER_INFO => 6,
+	CLOCK => 7,
+	SCREEN => 8,
+	TRIGGERS_OVERVIEW => 9,
+	DATA_OVERVIEW => 10,
+	URL => 11,
+	HISTORY_OF_ACTIONS => 12,
+	HISTORY_OF_EVENTS => 13,
+	LATEST_HOST_GROUP_ISSUES => 14,
+	SYSTEM_STATUS => 15,
+	LATEST_HOST_ISSUES => 16,
+	SIMPLE_GRAPH_PROTOTYPE => 19,
+	GRAPH_PROTOTYPE => 20,
+};
 
 my $config = config->new("$RealBin/../etc/config");
 my @dashboard_colors = $config->{dashboard_colors} ? split(/\s+/, $config->{dashboard_colors}) : (0, 96, 93, 91, 31, 41);
@@ -55,6 +81,7 @@ GetOptions(
     "no-colors|c" => \$config->{dashboard_no_colors},
     "priority|p" => \$config->{dashboard_priority_output},
     "groups|g=s" => \$config->{dashboard_groups_list},
+    "screen|s=s" => \$config->{dashboard_screen_list},
 );
 
 $config->{dashboard_limit} ||= 20;
@@ -65,7 +92,40 @@ my $z= Net::Zabbix->new(
     $config->{'zabbix-password'},
 );
 
-if ($config->{dashboard_groups_list}) {
+if ($config->{dashboard_screen_list}) {
+    foreach my $screen_query (split /[\s,:]/, $config->{dashboard_screen_list}) {
+        my $screens = $z->get('screen', {
+            #output => "extend",
+            selectScreenItems => "extend",
+            search => {
+                name => $screen_query,
+            },
+        });
+        # print Dumper($screens);exit;
+        zabbix_error($screens);
+
+        foreach my $screen (@{ $screens->{result} }) {
+            my $screen_name = $screen->{name};
+
+            foreach my $screen_item (@{ $screen->{screenitems} }) {
+				next if $screen_item->{resourcetype} ne $resourcetype_dict->{LATEST_HOST_GROUP_ISSUES};
+                my $groupid = $screen_item->{resourceid};
+
+                my $groups = $z->get('hostgroup', {
+                    groupids => $groupid,
+                });
+
+                zabbix_error($groups);
+
+                if ($groups->{result} and $#{ $groups->{result} } >=0) {
+                    my $group_name = $groups->{result}[0]->{name};
+                    print "[$screen_name] $group_name:\n";
+                    show_triggers($groupid);
+                }
+            }
+        }
+    }
+} elsif ($config->{dashboard_groups_list}) {
     foreach my $group_name (split /[\s,:]/, $config->{dashboard_groups_list}) {
         my $groups = $z->get('hostgroup', {
             search => {
