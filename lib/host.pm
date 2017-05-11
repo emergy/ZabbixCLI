@@ -105,6 +105,8 @@ sub search {
 
 
     foreach my $query (@query_list) {
+        $query = "*".$query."*" if $config->{'searchWildcardsEnabled'} and $query !~ /\*/;
+
         if ($config->{'replace-space'}) {
             if ($query =~ /\s/) {
                 $query =~ s/\s+/.*/g;
