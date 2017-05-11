@@ -82,6 +82,7 @@ GetOptions(
     "priority|p" => \$config->{dashboard_priority_output},
     "groups|g=s" => \$config->{dashboard_groups_list},
     "screen|s=s" => \$config->{dashboard_screen_list},
+    "show-expressions|e" => \$config->{dashboard_screen_show_expressions},
 );
 
 $config->{dashboard_limit} ||= 20;
@@ -171,20 +172,28 @@ sub show_triggers {
         $max_hostname_len = length($_->{hosts}[0]->{name}) if $max_hostname_len < length($_->{hosts}[0]->{name});
     }
 
-    foreach (@{ $triggers->{result} }) {
-        next if ! $_->{hosts} or ! $_->{hosts}[0]->{name};
+    foreach my $trigger (@{ $triggers->{result} }) {
+        next if ! $trigger->{hosts} or ! $trigger->{hosts}[0]->{name};
         print "\t" if $groupid;
+
         if ($config->{dashboard_no_colors}) {
             printf("%-${max_hostname_len}s : %s : (%s)\n",
-                        $_->{hosts}[0]->{name},
-                        $_->{description},
-                        get_age($_->{lastchange}));
+                        $trigger->{hosts}[0]->{name},
+                        $trigger->{description},
+                        get_age($trigger->{lastchange}));
         } else {
-            my $color = "\033[" . $dashboard_colors[$_->{priority}] . "m";
+            my $color = "\033[" . $dashboard_colors[$trigger->{priority}] . "m";
             printf("\033[0m%-${max_hostname_len}s\033[m : $color%s\033[m : \033[90m(%s)\033[m\n",
-                        $_->{hosts}[0]->{name},
-                        $_->{description},
-                        get_age($_->{lastchange}));
+                        $trigger->{hosts}[0]->{name},
+                        $trigger->{description},
+                        get_age($trigger->{lastchange}));
+        }
+
+        if ($config->{dashboard_screen_show_expressions}) {
+            print "\t" if $groupid;
+            print "\033[90m" unless $config->{dashboard_no_colors};
+            print "\t" . $trigger->{expression} . "\n";
+            print "\033[m" unless $config->{dashboard_no_colors};
         }
     }
 }
