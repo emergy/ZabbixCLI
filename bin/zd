@@ -6,9 +6,9 @@
 
 =head1 SYNOPSIS
 
-    zd [-v] [-p] [-l n] [-g group_name,group_name...]
-    zd [-v] [-p] [-l n] [-s screen_name,screen_name...]
-    zd [-v] [-p] [-l n] [-h host_name,host_name...]
+    zd [-c] [-v] [-p] [-l n] [-g group_name,group_name...]
+    zd [-c] [-v] [-p] [-l n] [-s screen_name,screen_name...]
+    zd [-c] [-v] [-p] [-l n] [-h host_name,host_name...]
 
 =head2 Options
 
@@ -33,6 +33,10 @@ Screen list
 =item -h
 
 Host list
+
+=item -c
+
+Disable/enable coloured output (Automatically inverted if not tty).
 
 =back
 
@@ -87,6 +91,7 @@ GetOptions(
 );
 
 $config->{dashboard_limit} ||= 20;
+$config->{dashboard_no_colors} = $config->{dashboard_no_colors} ? 0 : 1 if not -t STDOUT;
 
 my $z= Net::Zabbix->new(
     $config->{'zabbix-url'},
