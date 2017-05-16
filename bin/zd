@@ -212,19 +212,19 @@ sub show_triggers {
         print "\t" if $groupid;
 
         if ($config->{dashboard_no_colors}) {
-            printf("%-${max_hostname_len}s | %-${max_description_len}s | (%s)\n",
+            printf("%-${max_hostname_len}s | %-${max_description_len}s | %s\n",
                         $trigger->{hosts}[0]->{name},
                         $trigger->{description},
                         get_age($trigger->{lastchange}));
         } else {
             my $color = "\033[" . $dashboard_colors[$trigger->{priority}] . "m";
-            printf("\033[0m%-${max_hostname_len}s\033[m | $color%-${max_description_len}s\033[m | \033[90m(%s)\033[m\n",
+            printf("\033[0m%-${max_hostname_len}s\033[m | $color%-${max_description_len}s\033[m | \033[90m%s\033[m\n",
                         $trigger->{hosts}[0]->{name},
                         $trigger->{description},
                         get_age($trigger->{lastchange}));
         }
 
-        if ($config->{verbose}) {
+        if ($config->{verbose} and $config->{verbose} > 1) {
             print "\t" if $groupid;
             print "\033[90m" unless $config->{dashboard_no_colors};
 
@@ -262,6 +262,12 @@ sub get_age {
     my ($lastchange) = @_;
     require Time::Ago;
     my $age = Time::Ago->in_words(time - $lastchange);
+
+    if ($config->{verbose}) {
+        my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime($lastchange);
+        $age = sprintf("%02d.%02d.%04d %02d:%02d:%02d (%s)", $mday, $mon + 1, $year + 1900, $hour, $min, $sec, $age) ;
+    }
+
     return $age;
 }
 
