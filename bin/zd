@@ -52,6 +52,8 @@ use Net::Zabbix;
 use Getopt::Long;
 use Pod::Usage;
 
+binmode(STDOUT, ":utf8");
+
 my $resourcetype_dict = {
 	GRAPH => 0,
 	SIMPLE_GRAPH => 1,
@@ -90,7 +92,7 @@ GetOptions(
     "hosts|h=s" => \$config->{hosts_list},
 );
 
-$config->{dashboard_limit} ||= 20;
+$config->{dashboard_limit} ||= 30;
 $config->{dashboard_no_colors} = $config->{dashboard_no_colors} ? 0 : 1 if not -t STDOUT;
 
 my $z= Net::Zabbix->new(
@@ -198,8 +200,11 @@ sub show_triggers {
     zabbix_error($triggers);
 
     my $max_hostname_len = 0;
+    my $max_description_len = 0;
+
     foreach (@{ $triggers->{result} }) {
         $max_hostname_len = length($_->{hosts}[0]->{name}) if $max_hostname_len < length($_->{hosts}[0]->{name});
+        $max_description_len = length($_->{description}) if $max_description_len < length($_->{description});
     }
 
     foreach my $trigger (@{ $triggers->{result} }) {
@@ -207,15 +212,15 @@ sub show_triggers {
         print "\t" if $groupid;
 
         if ($config->{dashboard_no_colors}) {
-            printf("%-${max_hostname_len}s : %s : (%s)\n",
-                        utf8($trigger->{hosts}[0]->{name}),
-                        utf8($trigger->{description}),
+            printf("%-${max_hostname_len}s : %-${max_description_len}s : (%s)\n",
+                        $trigger->{hosts}[0]->{name},
+                        $trigger->{description},
                         get_age($trigger->{lastchange}));
         } else {
             my $color = "\033[" . $dashboard_colors[$trigger->{priority}] . "m";
-            printf("\033[0m%-${max_hostname_len}s\033[m : $color%s\033[m : \033[90m(%s)\033[m\n",
-                        utf8($trigger->{hosts}[0]->{name}),
-                        utf8($trigger->{description}),
+            printf("\033[0m%-${max_hostname_len}s\033[m : $color%-${max_description_len}s\033[m : \033[90m(%s)\033[m\n",
+                        $trigger->{hosts}[0]->{name},
+                        $trigger->{description},
                         get_age($trigger->{lastchange}));
         }
 
@@ -257,14 +262,7 @@ sub get_age {
     my ($lastchange) = @_;
     require Time::Ago;
     my $age = Time::Ago->in_words(time - $lastchange);
-    utf8::encode($age);
     return $age;
-}
-
-sub utf8 {
-    my ($text) = @_;
-    utf8::encode($text);
-    return $text;
 }
 
 sub usage {
