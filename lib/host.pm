@@ -105,22 +105,14 @@ sub search {
 
 
     foreach my $query (@query_list) {
-        $query = "*".$query."*" if $config->{'searchWildcardsEnabled'} and $query !~ /\*/;
-
-        if ($config->{'replace-space'}) {
-            if ($query =~ /\s/) {
-                $query =~ s/\s+/.*/g;
-                $config->{'regexp'} = 1;
-            }
-        }
-    
         unless ($config->{'regexp'}) {
             # Aliases
             $query = $config->{alias}->{$query} if $config->{alias}->{$query};
-    
+
+            $query = "*".$query."*" if $config->{'searchWildcardsEnabled'} and $query !~ /\*/;
             $search_opts->{$_} = $query foreach (@{$config->{'fields'}});
         }
-    
+
         $config->{'sortfield'} ||= [ "name", "host" ];
         my $select_inventory;
         my $select_macros;
