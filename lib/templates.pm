@@ -282,7 +282,7 @@ sub change_macros {
                 }
 
                 if (uc($macro) eq $current_macros->{macro}) {
-                    if ($value) {
+                    if (defined $value and length($value) > 0) {
                         if ($value ne $current_macros->{value}) {
                             my $update_macro_result = $self->{'zabbix'}->update('usermacro', {
                                 hostmacroid => $current_macros->{hostmacroid},
@@ -310,7 +310,7 @@ sub change_macros {
                     }
 
                     $macros_is_exist = 1;
-                } elsif (! $value) {
+                } elsif (! defined $value) {
                     $macros_is_exist = 1;
                 }
             }
