@@ -90,6 +90,7 @@ GetOptions(
     "groups|g=s" => \$config->{dashboard_groups_list},
     "screen|s=s" => \$config->{dashboard_screen_list},
     "hosts|h=s" => \$config->{hosts_list},
+    "show-no-active|A" => \$config->{show_no_active}
 );
 
 $config->{dashboard_limit} ||= 30;
@@ -179,12 +180,14 @@ if ($config->{hosts_list}) {
 
 sub show_triggers {
     my ($groupid, $hostid_list) = @_;
+
+    my $filter = {};
+    $filter->{value} = 1 unless $config->{show_no_active};
+
     my $triggers = $z->get('trigger', {
         skipDependent => 1,
         monitored => 1,
-        filter => {
-            value => 1,
-        },
+        filter => $filter,
         limit => $config->{dashboard_limit},
         expandDescription => 1,
         expandExpression => 1,
