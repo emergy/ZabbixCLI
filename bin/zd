@@ -191,7 +191,8 @@ sub show_triggers {
         limit => $config->{dashboard_limit},
         expandDescription => 1,
         expandExpression => 1,
-        selectHosts => [ "hostis", "name" ],
+        selectItems => 'extend',
+        selectHosts => [ "hostis", "name", "host" ],
         sortfield => $config->{dashboard_priority_output} ? [ "priority", "lastchange" ] : [ "lastchange" ],
         sortorder => "DESC",
         groupids => $groupid,
@@ -236,10 +237,20 @@ sub show_triggers {
                     templateids => $trigger->{templateid},
                 });
 
+                print Dumper($templates);
+
                 zabbix_error($templates);
 
                 if ($templates->{result} and $#{ $templates->{result} } >=0) {
                     print utf8($templates->{result}[0]->{host}) . ": ";
+                }
+            }
+
+
+            if ($config->{verbose} > 2) {
+                foreach (@{ $trigger->{items} }) {
+                    my $type = "(" . get_item_type($_->{type}) .") " || "";
+                    $trigger->{expression} =~ s/$_->{key_}/$_->{key_}\[${type}$_->{name}\]($_->{lastvalue})/;
                 }
             }
 
@@ -274,7 +285,38 @@ sub get_age {
     return $age;
 }
 
+sub get_item_type {
+    my ($num) = @_;
+	my $types = {
+		0 => "AGENT",
+		1 => "SNMP1",
+		2 => "TRAPPER",
+		3 => "SIMPLE",
+		4 => "SNMP2",
+		5 => "INTERN",
+		6 => "SNMP3",
+		7 => "AGENT (active)",
+		8 => "AGGR",
+		9 => "HTTP",
+		10 => "EXTERN",
+		11 => "DBMON",
+		12 => "IPMI",
+		13 => "SSH",
+		14 => "TELNET",
+		15 => "CALC",
+		16 => "JMX",
+		17 => "SNMPT",
+	};
+
+	if ($types->{$num}) {
+        return $types->{$num};
+    } else {
+        return "unknown";
+    }
+}
+
 sub usage {
     pod2usage(1);
     exit;
 }
+
