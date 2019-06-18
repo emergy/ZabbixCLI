@@ -6,9 +6,9 @@
 
 =head1 SYNOPSIS
 
-    zd [-c] [-v] [-p] [-l n] [-g group_name,group_name...]
-    zd [-c] [-v] [-p] [-l n] [-s screen_name,screen_name...]
-    zd [-c] [-v] [-p] [-l n] [-h host_name,host_name...]
+    zd [-c] [-v] [-p] [-l n] [-L n] [-g group_name,group_name...]
+    zd [-c] [-v] [-p] [-l n] [-L n] [-s screen_name,screen_name...]
+    zd [-c] [-v] [-p] [-l n] [-L n] [-h host_name,host_name...]
 
 =head2 Options
 
@@ -17,6 +17,10 @@
 =item -p
 
 Priority output
+
+=item -L
+
+Priority level
 
 =item -l
 
@@ -90,7 +94,8 @@ GetOptions(
     "groups|g=s" => \$config->{dashboard_groups_list},
     "screen|s=s" => \$config->{dashboard_screen_list},
     "hosts|h=s" => \$config->{hosts_list},
-    "show-no-active|A" => \$config->{show_no_active}
+    "show-no-active|A" => \$config->{show_no_active},
+    "priority-level|L=s" => \$config->{priority_level},
 );
 
 $config->{dashboard_limit} ||= 30;
@@ -213,6 +218,7 @@ sub show_triggers {
 
     foreach my $trigger (@{ $triggers->{result} }) {
         next if ! $trigger->{hosts} or ! $trigger->{hosts}[0]->{name};
+        next if $config->{priority_level} and $trigger->{priority} < $config->{priority_level};
         print "\t" if $groupid;
 
         if ($config->{dashboard_no_colors}) {
@@ -237,8 +243,6 @@ sub show_triggers {
                     templateids => $trigger->{templateid},
                 });
 
-                print Dumper($templates);
-
                 zabbix_error($templates);
 
                 if ($templates->{result} and $#{ $templates->{result} } >=0) {
@@ -250,7 +254,8 @@ sub show_triggers {
             if ($config->{verbose} > 2) {
                 foreach (@{ $trigger->{items} }) {
                     my $type = "(" . get_item_type($_->{type}) .") " || "";
-                    $trigger->{expression} =~ s/$_->{key_}/$_->{key_}\[${type}$_->{name}\]($_->{lastvalue})/;
+                    my $re = quotemeta($_->{key_});
+                    $trigger->{expression} =~ s/$re/$_->{key_}\[${type}$_->{name}\]($_->{lastvalue})/;
                 }
             }
 

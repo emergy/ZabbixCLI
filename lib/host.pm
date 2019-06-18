@@ -55,6 +55,7 @@ sub new {
         $config->{'zabbix-url'},
         $config->{'zabbix-username'},
         $config->{'zabbix-password'},
+         $config->{'debug'},
     );
 
     $self->{'config'} = $config;
@@ -109,8 +110,10 @@ sub search {
             # Aliases
             $query = $config->{alias}->{$query} if $config->{alias}->{$query};
 
-            $query = "*".$query."*" if $config->{'searchWildcardsEnabled'} and $query !~ /\*/;
-            $search_opts->{$_} = $query foreach (@{$config->{'fields'}});
+            if ($query !~ /^@/) {
+                $query = "*".$query."*" if $config->{'searchWildcardsEnabled'} and $query !~ /\*/;
+                $search_opts->{$_} = $query foreach (@{$config->{'fields'}});
+            }
         }
 
         $config->{'sortfield'} ||= [ "name", "host" ];
@@ -124,23 +127,50 @@ sub search {
             $select_groups = 'extend';
         }
 
-        my $get_options = { 
-            search      => $search_opts,
-            searchByAny => $config->{'searchByAny'},
-            sortfield   => $config->{'sortfield'},
-            selectInventory => $select_inventory,
-            selectMacros => $select_macros,
-            selectGroups => $select_groups,
-            searchWildcardsEnabled =>  $config->{'searchWildcardsEnabled'},
-        };
+        my $res = {};
 
-        unless ($config->{filter}) {
-            $get_options->{search} = $search_opts;
+        if ($query =~ /^@/) {
+            $query =~ s/^@//;
+            my $grp_obj = $zabbix->get('hostgroup', {
+                filter => {
+                    name => $query,
+                },
+            });
+
+            if ($grp_obj->{result}) {
+                if ($#{ $grp_obj->{result} } >= 0) {
+                    my $get_options = {
+                        groupids => $grp_obj->{result}[0]->{groupid},
+                        sortfield   => $config->{'sortfield'},
+                        selectInventory => $select_inventory,
+                        selectMacros => $select_macros,
+                        selectGroups => $select_groups,
+                    };
+
+                    $res = $zabbix->get("host", $get_options);
+                }
+            } else {
+                print Dumper($grp_obj->{error});
+            }
         } else {
-            $get_options->{filter} = $search_opts;
+            my $get_options = { 
+                search      => $search_opts,
+                searchByAny => $config->{'searchByAny'},
+                sortfield   => $config->{'sortfield'},
+                selectInventory => $select_inventory,
+                selectMacros => $select_macros,
+                selectGroups => $select_groups,
+                searchWildcardsEnabled =>  $config->{'searchWildcardsEnabled'},
+            };
+
+            unless ($config->{filter}) {
+                $get_options->{search} = $search_opts;
+            } else {
+                $get_options->{filter} = $search_opts;
+            }
+        
+            $res = $zabbix->get("host", $get_options);
         }
-    
-        my $res = $zabbix->get("host", $get_options);
     
         if (ref $res->{result} eq 'ARRAY') {
             foreach my $host (@{$res->{result}}) {
