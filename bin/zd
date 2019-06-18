@@ -81,7 +81,7 @@ my $resourcetype_dict = {
 };
 
 my $config = config->new("$RealBin/../etc/config");
-my @dashboard_colors = $config->{dashboard_colors} ? split(/\s+/, $config->{dashboard_colors}) : (0, 96, 93, 91, 31, 41);
+my @dashboard_colors = $config->{dashboard_colors} ? split(/\s+/, $config->{dashboard_colors}) : (0, 96, 93, 31, 91, 41);
 
 Getopt::Long::Configure("bundling");
 GetOptions(
@@ -228,7 +228,7 @@ sub show_triggers {
                         get_age($trigger->{lastchange}));
         } else {
             my $color = "\033[" . $dashboard_colors[$trigger->{priority}] . "m";
-            printf("\033[0m%-${max_hostname_len}s\033[m | $color%-${max_description_len}s\033[m | \033[90m%s\033[m\n",
+            printf("\033[0m%-${max_hostname_len}s\033[m | $color%-${max_description_len}s\033[m | %s\n",
                         $trigger->{hosts}[0]->{name},
                         $trigger->{description},
                         get_age($trigger->{lastchange}));
@@ -285,6 +285,20 @@ sub get_age {
     if ($config->{verbose}) {
         my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime($lastchange);
         $age = sprintf("%02d.%02d.%04d %02d:%02d:%02d (%s)", $mday, $mon + 1, $year + 1900, $hour, $min, $sec, $age) ;
+    }
+
+    if (!$config->{dashboard_no_colors}) {
+        my $color = 90;
+
+        if (time - $lastchange <= 600) {
+            $color = $dashboard_colors[$#dashboard_colors];
+        } elsif (time - $lastchange <= 3600) {
+            $color = $dashboard_colors[$#dashboard_colors - 1]
+        } elsif (time - $lastchange <= 86400) {
+            $color = $dashboard_colors[$#dashboard_colors - 2]
+        }
+
+        $age = sprintf("\033[%sm%s\033[0m", $color, $age);
     }
 
     return $age;
