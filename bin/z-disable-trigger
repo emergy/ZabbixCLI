@@ -1,0 +1,130 @@
+#!/usr/bin/env perl
+
+=head1 NAME
+
+    z-disable-trigger - ZabbixCLI disable trigger
+
+=head1 SYNOPSIS
+
+    z-disable-trigger <query> [-d|-e]
+
+=cut
+
+use strict;
+use warnings;
+use Data::Dumper;
+use FindBin '$RealBin';
+use lib "$RealBin/../lib";
+use Net::Zabbix;
+use Pod::Usage;
+use Data::Dumper;
+use Getopt::Long;
+use templates;
+use host;
+use config;
+
+$|=1;
+
+our $config = config->new("$RealBin/../etc/config", {
+});
+
+Getopt::Long::Configure ("bundling");
+my $opts = GetOptions(
+    "help|h|?" => sub { usage() },
+    "verbose|v+" => \$config->{verbose},
+    "debug" => \$config->{debug},
+    "enabled-hosts-only" => \$config->{'enabled-only'},
+    "disabled-hosts-only" => \$config->{'disabled-only'},
+    "regexp|r" => \$config->{'regexp'},
+    "expression|E=s" => \$config->{'expression'},
+    "description|D=s" => \$config->{'description'},
+    "status|S=s" => \$config->{'status'},
+    "comments|C=s" => \$config->{'comments'},
+    "only-true|t" => \$config->{'only-true'},
+    "triggerid|i=s" => \$config->{'trigger_id'},
+    "wildcards-enabled|w" => \$config->{'wildcards-enabled'},
+    "enable|e" => \$config->{'action_enable'},
+    "disbale|d" => \$config->{'action_disbale'},
+);
+
+
+my @dashboard_colors = $config->{dashboard_colors} ? split(/\s+/, $config->{dashboard_colors}) : (0, 96, 93, 31, 91, 41);
+my $host_obj = host->new($config);
+
+
+my $t = templates->new($config);
+my $search_res;
+
+usage() if $#ARGV < 0;
+
+# foreach my $query (@ARGV) {
+#     push @$search_res, (@{$host_obj->search($query, {searchByAny => 1, selectTriggers => 1 })});
+# }
+
+# print Dumper($search_res);
+
+# $host_obj->show_results($search_res, {
+#     verbose => $config->{verbose},
+# });
+
+foreach my $query (@ARGV) {
+    my $hosts = $host_obj->search($query, {searchByAny => 1, selectTriggers => 1 });
+    map { $_ = $_->{'hostid'} } @$hosts;
+    my $params = {
+        hostids => $hosts,
+        selectHosts => ['name', 'hostid', 'status'],
+        expandExpression => 1,
+        expandDescription => 1,
+        expandComment => 1,
+        #selectItems => ['name', 'key_', 'status'],
+    };
+
+    $params->{'searchWildcardsEnabled'} = 1 if $config->{'wildcards-enabled'};
+
+    $params->{only_true} = 1 if $config->{'only-true'};
+
+    if ($config->{'trigger_id'}) {
+        my @ids = split(/\D/, $config->{'trigger_id'});
+        $params->{triggerids} = \@ids;
+    }
+
+    if ($config->{'expression'} || $config->{'description'} || $config->{'status'} || $config->{'comments'}) {
+        my $filter = {};
+        $filter->{'expression'} = $config->{'expression'} if $config->{'expression'};
+        $filter->{'description'} = $config->{'description'} if $config->{'description'};
+        $filter->{'status'} = $config->{'status'} if $config->{'status'};
+        $filter->{'comments'} = $config->{'comments'} if $config->{'comments'};
+        $params->{'search'} = $filter;
+    }
+
+    my $triggers = $host_obj->get_triggers($hosts, $params);
+
+    foreach my $trigger (@$triggers) {
+        my $priority_color = "\033[" . $dashboard_colors[$trigger->{priority}] . "m";
+        my $host_color = $trigger->{'hosts'}[0]->{status} ? "\033[31m" : "\033[1m";
+        my $trigger_color = $trigger->{status} ? "\033[31m" : "\033[m";
+        printf("$host_color%-18s\033[m [$trigger_color%s\033[m] $priority_color%-30s\033[m \033[90m%s\033[m\n", $trigger->{'hosts'}[0]->{name}, $trigger->{triggerid}, $trigger->{description}, $config->{verbose} ? $trigger->{expression} : '');
+    }
+
+    if ($config->{'action_enable'} || $config->{'action_disbale'}) {
+        my $action = $config->{'action_enable'} ? 0 : 1;
+        printf("%s triggets [enter/ctrl-c]: ", $config->{'action_enable'} ? "Disable" : "Enable");
+        readline(*STDIN);
+
+        foreach my $trigger (@$triggers) {
+            my $r = $host_obj->trigger_action($trigger->{triggerid}, $action);
+            if ($r->{error}) {
+                print 'F';
+            } else {
+                print '.';
+            }
+        }
+        print "\n";
+    }
+}
+
+
+sub usage {
+    pod2usage(1);
+    exit 1;
+}
