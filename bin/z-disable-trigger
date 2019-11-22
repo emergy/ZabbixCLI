@@ -6,7 +6,49 @@
 
 =head1 SYNOPSIS
 
-    z-disable-trigger <query> [-d|-e]
+    z-disable-trigger <query> [options]
+
+=head2 Options
+
+=over 4
+
+=item -d
+
+Disable trigger
+
+=item -e
+
+Enable trigger
+
+=item -t
+
+Select only triggers that have recently been in a problem state.
+
+=item -i
+
+Select by trigger id
+
+=item -D
+
+Select by description
+
+=item -E
+
+Select by expression
+
+=item -S
+
+Select by status
+
+=item -C
+
+Select by trigger commit
+
+=item -w
+
+Enable wildcards support
+
+=back
 
 =cut
 
