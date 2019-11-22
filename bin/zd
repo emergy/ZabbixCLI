@@ -6,9 +6,9 @@
 
 =head1 SYNOPSIS
 
-    zd [-c] [-v] [-p] [-l n] [-L n] [-g group_name,group_name...]
-    zd [-c] [-v] [-p] [-l n] [-L n] [-s screen_name,screen_name...]
-    zd [-c] [-v] [-p] [-l n] [-L n] [-h host_name,host_name...]
+    zd [-c] [-v] [-p] [-l n] [-L n] [-t n] [-g group_name,group_name...]
+    zd [-c] [-v] [-p] [-l n] [-L n] [-t n] [-s screen_name,screen_name...]
+    zd [-c] [-v] [-p] [-l n] [-L n] [-t n] -h host_name,host_name...]
 
 =head2 Options
 
@@ -96,6 +96,7 @@ GetOptions(
     "hosts|h=s" => \$config->{hosts_list},
     "show-no-active|A" => \$config->{show_no_active},
     "priority-level|L=s" => \$config->{priority_level},
+    "age|t=s" => \$config->{age},
 );
 
 $config->{dashboard_limit} ||= 30;
@@ -110,7 +111,7 @@ my $z= Net::Zabbix->new(
 
 if ($config->{hosts_list}) {
     my @hostid_list;
-    foreach my $query (split(/[\s,:]/, $config->{hosts_list})) {
+    foreach my $query (split(/[,:]/, $config->{hosts_list})) {
         $query = "*".$query."*" if $config->{searchWildcardsEnabled} and $query !~ /\*/;
         my $hosts = $z->get('host', {
             search => {
@@ -219,6 +220,7 @@ sub show_triggers {
     foreach my $trigger (@{ $triggers->{result} }) {
         next if ! $trigger->{hosts} or ! $trigger->{hosts}[0]->{name};
         next if $config->{priority_level} and $trigger->{priority} < $config->{priority_level};
+        next if $config->{age} and time - $trigger->{lastchange} > $config->{age} * 60;
         print "\t" if $groupid;
 
         if ($config->{dashboard_no_colors}) {

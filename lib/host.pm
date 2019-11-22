@@ -96,7 +96,7 @@ sub search {
     foreach my $key (keys %$params) {
         $config->{$key} = $params->{$key};
     }
-    
+
     $config->{'fields'} ||= ["ip", "dns", "name", "host"]; # Default fields
 
     my $search_opts = {};
@@ -153,7 +153,7 @@ sub search {
                 print Dumper($grp_obj->{error});
             }
         } else {
-            my $get_options = { 
+            my $get_options = {
                 search      => $search_opts,
                 searchByAny => $config->{'searchByAny'},
                 sortfield   => $config->{'sortfield'},
@@ -168,15 +168,15 @@ sub search {
             } else {
                 $get_options->{filter} = $search_opts;
             }
-        
+
             $res = $zabbix->get("host", $get_options);
         }
-    
+
         if (ref $res->{result} eq 'ARRAY') {
             foreach my $host (@{$res->{result}}) {
                 if ($config->{'regexp'}) {
                     my $safe = 0;
-    
+
                     foreach my $field (@{$config->{'fields'}}) {
                         if ($host->{$field}) {
 
@@ -188,33 +188,48 @@ sub search {
                                         $safe = 1 if $host->{$field} !~ /$bl_item/;
                                     }
                                 }
-                                
+
                                 $safe = 1 if $#black_list < 0;
                             }
                         }
                     }
-        
+
                     next unless $safe;
                 }
-    
+
                 # Enabled only arg
                 if ($config->{'enabled-only'}) {
                     next if $host->{'status'} == 1;
                 }
-         
+
                 # Disabled only arg
                 if ($config->{'disabled-only'}) {
                     next if $host->{'status'} == 0;
                 }
-    
+
                 print Dumper($host) if $config->{debug};
                 push @r, $host;
             }
-    
+
         }
     }
 
     return \@r;
+}
+
+sub get_triggers {
+    my ($self, $hostids, $params) = @_;
+    my $zabbix = $self->{'zabbix'};
+    $zabbix->get('trigger', $params)->{result};
+}
+
+sub trigger_action {
+    my ($self, $id, $status) = @_;
+    my $zabbix = $self->{'zabbix'};
+    $zabbix->update("trigger", {
+        triggerid =>  $id,
+        status => $status,
+    })
 }
 
 sub get_interfaces {
@@ -257,7 +272,7 @@ sub show_results {
     # Just show find result
     foreach my $host (@$search) {
         my $interfaces = get_interfaces($self, $host);
- 
+
         if ($params->{verbose}) {
             show_verbose($host, $interfaces);
         } else {
@@ -304,7 +319,7 @@ sub show_verbose {
     if (($host->{name}) and ($host->{name} ne $host->{host})) {
         print "Description: " . $host->{name} . "\n";
     }
-    
+
     if (($host->{groups}) and ($#{ $host->{groups} } >=0)) {
         print "  Groups:\n";
         foreach (@{ $host->{groups} }) {
