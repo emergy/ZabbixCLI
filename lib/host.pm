@@ -154,7 +154,7 @@ sub search {
             }
         } else {
             my $get_options = {
-                search      => $search_opts,
+                #search      => $search_opts,
                 searchByAny => $config->{'searchByAny'},
                 sortfield   => $config->{'sortfield'},
                 selectInventory => $select_inventory,
@@ -286,7 +286,7 @@ sub show_results {
                 }
 
                 my $show_hostname = $host->{name} || $host->{host};
-                $show_hostname =~ s/^(.*)$/\033[91m$1\033[0m/ if ($host->{status});
+                $show_hostname =~ s/^(.*)$/\033[91m$1\033[0m/ if ($host->{status} && !$params->{'disable_colors'});
 
                 push @show_list, {
                     iflist => $iflist,

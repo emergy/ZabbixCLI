@@ -126,6 +126,7 @@ GetOptions(
     },
     "disable-cache-menu|S" => \$config->{'disable_cache_menu'},
     "disable-colors|D" =>\$config->{'disable_colors'},
+    "filter|f" => \$config->{filter},
 ); 
 
 

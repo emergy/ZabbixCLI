@@ -89,6 +89,7 @@ sub ssh {
     print 'execute: ' . $cmd . "\n" if ($config->{verbose});
 
     $ENV{'PROMPT_COMMAND'} = qq(echo -ne "\\033]0;$name\\007");
+    print "\033]0;$name\007";
 
     if ($config->{'ssh-command'}) {
         if ($config->{verbose}) {

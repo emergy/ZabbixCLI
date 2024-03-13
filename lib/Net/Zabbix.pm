@@ -187,6 +187,7 @@ sub ua {
 		$self->{UserAgent} = LWP::UserAgent->new;
 		$self->{UserAgent}->agent("Net::Zabbix");
 		$self->{UserAgent}->timeout(3600);
+		$self->{UserAgent}->ssl_opts({ verify_hostname => 1 });
 	}
 	
 	return $self->{UserAgent};
