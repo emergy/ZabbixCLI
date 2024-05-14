@@ -99,8 +99,12 @@ sub ssh {
         }
     } else {
         print "\c[];$name\a";
+        $ENV{'PROMPT_COMMAND'} = qq(echo -ne "\\033]0;$name\\007");
+        print "\033]0;$name\007";
         system($cmd);
         print "\c[];Shell\a";
+        $ENV{'PROMPT_COMMAND'} = qq(echo -ne "\\033]0;\\007");
+        print "\033]0;\007";
     }
 }
 
